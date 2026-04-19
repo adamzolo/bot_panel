@@ -20,7 +20,8 @@ parse_args() {
   while [[ $# -gt 0 ]]; do
     case $1 in --update) UPD=1;shift;; --no-ssl) NOSSL=1;shift;;
       --token) GH_TOKEN="${2:-}";shift 2;;
-      --help) echo "sudo bash install.sh [--update] [--no-ssl] [--token GITHUB_TOKEN]";exit 0;;
+      --password) PP="${2:-}";shift 2;;
+      --help) echo "sudo bash install.sh [--update] [--no-ssl] [--token GITHUB_TOKEN] [--password PASS]";exit 0;;
       *) die "Unknown: $1";; esac; done; }
 
 detect_os() {
@@ -129,10 +130,21 @@ SUDEOF
 
 ask_password() {
   [[ -n "$PP" ]] && return
-  echo -e "\n${Y}Set admin password (for emergency console access):${N}"
-  while true; do
-    read -s -rp "Password: " P1; echo; read -s -rp "Confirm:  " P2; echo
-    [[ "$P1" == "$P2" && ${#P1} -ge 4 ]] && PP="$P1" && break; warn "Mismatch or too short"; done; }
+  # Non-interactive mode (piped from curl) — read from /dev/tty
+  if [[ ! -t 0 ]]; then
+    echo -e "\n${Y}Set admin password:${N}" > /dev/tty
+    while true; do
+      IFS= read -r -s -p "Password (min 4 chars): " P1 < /dev/tty; echo > /dev/tty
+      IFS= read -r -s -p "Confirm: " P2 < /dev/tty; echo > /dev/tty
+      [[ "$P1" == "$P2" && ${#P1} -ge 4 ]] && PP="$P1" && break
+      warn "Mismatch or too short" > /dev/tty
+    done
+  else
+    echo -e "\n${Y}Set admin password:${N}"
+    while true; do
+      read -s -rp "Password: " P1; echo; read -s -rp "Confirm:  " P2; echo
+      [[ "$P1" == "$P2" && ${#P1} -ge 4 ]] && PP="$P1" && break; warn "Mismatch or too short"; done
+  fi; }
 
 mk_dirs() {
   mkdir -p "$PD"/{app,static,bots,bots_venv} "$BK" "$SS"
