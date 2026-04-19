@@ -420,12 +420,6 @@ EOF
   systemctl daemon-reload&&systemctl enable botpanel; ok "Service: user=$RU, sandboxed"; }
 
 
-write_app() {
-  info "Writing server.py..."
-  cat > "$PD/app/server.py" 
-# ════════════════════════════
-# Write Node.js server
-# ════════════════════════════
 # ========================
 # Deploy Node.js server (from cloned repo)
 # ========================
