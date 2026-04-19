@@ -1085,9 +1085,47 @@ ua:[
 <p><b>Крок 1 — Назва.</b> Будь-яке ім'я латиницею: <code>my_telegram_bot</code>.</p>
 <p><b>Крок 2 — Платформа.</b> Telegram (найпростіше), Discord, WhatsApp, Viber.</p>
 <p><b>Крок 3 — Мова.</b> Python, Node.js, PHP, Ruby.</p>
-<p><b>Крок 4 — Токен.</b> Вставте токен. Він автоматично передається як <code>BOT_TOKEN</code>.</p>
+<p><b>Крок 4 — Токен.</b> Задай токен у <b>Config Vars</b> як змінну <code>BOT_TOKEN</code>.</p>
 <p><b>Крок 5 — Шаблон.</b> Basic, Echo, Menu, Broadcast або Inline.</p>
-<p>Натисни <b>Створити</b> — код і залежності готові автоматично.</p>`},
+<p>Натисни <b>Створити</b> — код і залежності готові автоматично.</p>
+<h3>Приклади коду по мовах</h3>
+<p><b>Python</b></p>
+<pre>import os
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+
+async def start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text('Привіт!')
+
+app = ApplicationBuilder().token(os.environ['BOT_TOKEN']).build()
+app.add_handler(CommandHandler('start', start))
+app.run_polling()</pre>
+<p><b>Node.js</b></p>
+<pre>const TelegramBot = require('node-telegram-bot-api');
+const bot = new TelegramBot(process.env.BOT_TOKEN, {polling: true});
+
+bot.onText(/\/start/, (msg) => {
+  bot.sendMessage(msg.chat.id, 'Привіт!');
+});</pre>
+<p><b>PHP</b></p>
+<pre>&lt;?php
+$token = getenv('BOT_TOKEN');
+$url = "https://api.telegram.org/bot{$token}/";
+$updates = json_decode(file_get_contents($url . "getUpdates"), true);
+foreach ($updates['result'] as $update) {
+  $chat_id = $update['message']['chat']['id'];
+  file_get_contents($url . "sendMessage?chat_id={$chat_id}&amp;text=Привіт!");
+}</pre>
+<p><b>Ruby</b></p>
+<pre>require 'telegram/bot'
+
+Telegram::Bot::Client.run(ENV['BOT_TOKEN']) do |bot|
+  bot.listen do |msg|
+    case msg.text
+    when '/start' then bot.api.send_message(chat_id: msg.chat.id, text: 'Привіт!')
+    end
+  end
+end</pre>`},
   {id:'token',icon:'🔑',t:'Токен Telegram (@BotFather)',b:`<h3>Отримати токен Telegram</h3>
 <p>1. Знайди <b>@BotFather</b> у Telegram.</p>
 <p>2. Відправ <code>/newbot</code></p>
@@ -1130,9 +1168,47 @@ en:[
 <p><b>Step 1 — Name.</b> Any Latin name: <code>my_telegram_bot</code>.</p>
 <p><b>Step 2 — Platform.</b> Telegram (easiest), Discord, WhatsApp, Viber.</p>
 <p><b>Step 3 — Language.</b> Python, Node.js, PHP, Ruby.</p>
-<p><b>Step 4 — Token.</b> Paste the bot token. Automatically available as <code>BOT_TOKEN</code> env var.</p>
+<p><b>Step 4 — Token.</b> Set the token in <b>Config Vars</b> as <code>BOT_TOKEN</code> environment variable.</p>
 <p><b>Step 5 — Template.</b> Basic, Echo, Menu, Broadcast, or Inline — ready to run.</p>
-<p>Click <b>Create</b> — code and dependencies are set up automatically.</p>`},
+<p>Click <b>Create</b> — code and dependencies are set up automatically.</p>
+<h3>Code examples by language</h3>
+<p><b>Python</b></p>
+<pre>import os
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+
+async def start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text('Hello!')
+
+app = ApplicationBuilder().token(os.environ['BOT_TOKEN']).build()
+app.add_handler(CommandHandler('start', start))
+app.run_polling()</pre>
+<p><b>Node.js</b></p>
+<pre>const TelegramBot = require('node-telegram-bot-api');
+const bot = new TelegramBot(process.env.BOT_TOKEN, {polling: true});
+
+bot.onText(/\/start/, (msg) => {
+  bot.sendMessage(msg.chat.id, 'Hello!');
+});</pre>
+<p><b>PHP</b></p>
+<pre>&lt;?php
+$token = getenv('BOT_TOKEN');
+$url = "https://api.telegram.org/bot{$token}/";
+$updates = json_decode(file_get_contents($url . "getUpdates"), true);
+foreach ($updates['result'] as $update) {
+  $chat_id = $update['message']['chat']['id'];
+  file_get_contents($url . "sendMessage?chat_id={$chat_id}&amp;text=Hello!");
+}</pre>
+<p><b>Ruby</b></p>
+<pre>require 'telegram/bot'
+
+Telegram::Bot::Client.run(ENV['BOT_TOKEN']) do |bot|
+  bot.listen do |msg|
+    case msg.text
+    when '/start' then bot.api.send_message(chat_id: msg.chat.id, text: 'Hello!')
+    end
+  end
+end</pre>`},
   {id:'token',icon:'🔑',t:'Telegram token (@BotFather)',b:`<h3>Get Telegram token</h3>
 <p>1. Find <b>@BotFather</b> in Telegram.</p>
 <p>2. Send <code>/newbot</code></p>
