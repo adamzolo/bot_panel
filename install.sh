@@ -452,18 +452,17 @@ clone_or_update_repo() {
   [[ -n "$GH_TOKEN" ]] && REPO_URL="https://${GH_TOKEN}@github.com/adamzolo/bot_panel.git"
 
   if [[ -d "$PD/.git" ]]; then
-    info "Updating from GitHub..."
+    info "Updating app files from GitHub..."
     git -C "$PD" pull origin main || warn "Git pull failed, using existing files"
-  elif [[ -d "$PD" ]]; then
-    info "Directory exists but not a git repo — initialising..."
-    git -C "$PD" init
-    git -C "$PD" remote add origin "$REPO_URL"
-    git -C "$PD" fetch --depth=1 origin main
-    git -C "$PD" checkout -f FETCH_HEAD
-    git -C "$PD" branch -M main
   else
-    info "Cloning from GitHub..."
-    git clone --depth=1 "$REPO_URL" "$PD" || die "Failed to clone repo"
+    info "Downloading app files from GitHub..."
+    local TMP; TMP=$(mktemp -d)
+    git clone --depth=1 "$REPO_URL" "$TMP" || die "Failed to clone repo"
+    cp -r "$TMP/app" "$PD/"
+    cp -r "$TMP/static" "$PD/"
+    cp "$TMP/update.sh" "$PD/"
+    cp -r "$TMP/.git" "$PD/"
+    rm -rf "$TMP"
   fi
   # Save token for future update.sh runs
   if [[ -n "$GH_TOKEN" ]]; then
