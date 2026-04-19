@@ -1,0 +1,1697 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bot Manager</title>
+<style>
+:root{
+  --bg:#f8fafc;--sf:#ffffff;--sf2:#f1f5f9;--sf3:#e2e8f0;
+  --br:#cbd5e1;--pr:#6762a6;--pr2:#5a559c;--prl:rgba(103,98,166,.1);
+  --ok:#059669;--er:#dc2626;--wa:#d97706;
+  --tx:#1e293b;--mu:#64748b;--muli:#94a3b8;
+  --m:'JetBrains Mono','Fira Code',monospace;--s:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+  --tr:.15s cubic-bezier(.4,0,.2,1);--r:8px;
+}
+[data-dark]{
+  --bg:#0d0e12;--sf:#16181f;--sf2:#1e2029;--sf3:#252836;
+  --br:#2d3048;--tx:#e2e8f0;--mu:#94a3b8;--muli:#64748b;--prl:rgba(103,98,166,.15);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--s);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+a{color:var(--pr);text-decoration:none;}
+button{font-family:var(--s);}
+
+/* ── Layout ─────────────────────────────────────────────── */
+#app{display:flex;flex-direction:column;height:100vh;}
+#hdr{height:56px;background:var(--sf);border-bottom:1px solid var(--br);display:flex;align-items:center;padding:0 24px;gap:16px;flex-shrink:0;z-index:100;}
+#body{display:flex;flex:1;overflow:hidden;}
+#sidebar{width:256px;background:var(--sf);border-right:1px solid var(--br);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;transition:width var(--tr);}
+#main{flex:1;overflow:auto;}
+
+/* ── Header ─────────────────────────────────────────────── */
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:.88rem;color:var(--tx);}
+.logo-box{width:32px;height:32px;background:var(--pr);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.hdr-divider{width:1px;height:22px;background:var(--br);}
+.hdr-crumb{font-size:.8rem;color:var(--mu);}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:2px;}
+.ico-btn{width:34px;height:34px;border-radius:6px;border:none;background:transparent;color:var(--mu);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background var(--tr),color var(--tr);}
+.ico-btn:hover{background:var(--sf2);color:var(--tx);}
+.ico-btn.danger:hover{background:#fee2e2;color:var(--er);}
+[data-dark] .ico-btn.danger:hover{background:rgba(220,38,38,.15);}
+.conn{width:8px;height:8px;border-radius:50%;background:var(--ok);flex-shrink:0;transition:background var(--tr);}
+.conn.off{background:var(--er);}
+.lang-dd{background:var(--sf2);border:1px solid var(--br);color:var(--tx);border-radius:6px;padding:4px 8px;font-size:.75rem;cursor:pointer;outline:none;}
+
+/* ── Sidebar ─────────────────────────────────────────────── */
+.sb-top{padding:12px 12px 8px;}
+.sb-search{width:100%;background:var(--sf2);border:1px solid var(--br);border-radius:6px;padding:7px 10px 7px 32px;color:var(--tx);font-size:.8rem;outline:none;transition:border-color var(--tr);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' fill='none' stroke='%2394a3b8' stroke-width='2' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:10px center;}
+.sb-search:focus{border-color:var(--pr);}
+.sb-section-lbl{font-size:.65rem;font-weight:700;color:var(--muli);text-transform:uppercase;letter-spacing:.08em;padding:10px 14px 4px;}
+.sb-apps{flex:1;overflow-y:auto;padding:0 8px 8px;}
+.sb-app{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:6px;cursor:pointer;transition:background var(--tr);position:relative;}
+.sb-app:hover{background:var(--sf2);}
+.sb-app.act{background:var(--prl);}
+.sb-app-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;transition:background var(--tr);}
+.sb-app-dot.on{background:var(--ok);}
+.sb-app-dot.off{background:var(--muli);}
+.sb-app-name{font-size:.82rem;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--tx);}
+.sb-app-meta{display:flex;gap:5px;align-items:center;flex-shrink:0;}
+.sb-app-lang{font-size:.65rem;color:var(--mu);background:var(--sf2);padding:1px 5px;border-radius:3px;font-family:var(--m);}
+.sb-app-up{font-size:.65rem;color:var(--mu);}
+.sb-footer{padding:8px;border-top:1px solid var(--br);}
+.sb-new-btn{width:100%;display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:6px;border:none;background:none;color:var(--mu);cursor:pointer;font-size:.8rem;transition:all var(--tr);}
+.sb-new-btn:hover{background:var(--prl);color:var(--pr);}
+
+/* ── Welcome ─────────────────────────────────────────────── */
+#welcome{display:flex;align-items:center;justify-content:center;min-height:100%;padding:40px 20px;}
+.welcome-inner{width:100%;max-width:480px;display:flex;flex-direction:column;align-items:center;gap:0;}
+.wel-hero{text-align:center;margin-bottom:36px;}
+.wel-icon{width:72px;height:72px;background:linear-gradient(135deg,var(--pr) 0%,#8b5cf6 100%);border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;box-shadow:0 8px 32px rgba(103,98,166,.3);}
+.wel-title{font-size:1.6rem;font-weight:700;margin-bottom:8px;letter-spacing:-.02em;}
+.wel-sub{color:var(--mu);font-size:.88rem;}
+/* Big primary button */
+.wel-cta{width:100%;padding:16px 24px;background:var(--pr);border:none;border-radius:10px;color:#fff;font-size:.95rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:14px;text-align:left;margin-bottom:10px;transition:background var(--tr),transform var(--tr),box-shadow var(--tr);box-shadow:0 4px 14px rgba(103,98,166,.35);}
+.wel-cta:hover{background:var(--pr2);transform:translateY(-1px);box-shadow:0 6px 20px rgba(103,98,166,.45);}
+.wel-cta-icon{width:42px;height:42px;background:rgba(255,255,255,.18);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.wel-cta-t{font-size:.95rem;font-weight:700;margin-bottom:2px;}
+.wel-cta-s{font-size:.72rem;opacity:.8;}
+/* Secondary button */
+.wel-sec{width:100%;padding:12px 16px;background:var(--sf);border:1px solid var(--br);border-radius:8px;color:var(--tx);font-size:.83rem;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:12px;text-align:left;margin-bottom:28px;transition:all var(--tr);}
+.wel-sec:hover{background:var(--sf2);border-color:var(--pr);}
+.wel-sec-icon{width:34px;height:34px;background:var(--sf2);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+/* Stats grid */
+.wel-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;width:100%;margin-bottom:28px;}
+.wel-stat{background:var(--sf);border:1px solid var(--br);border-radius:8px;padding:14px 10px;text-align:center;}
+.wel-stat-l{font-size:.6rem;color:var(--mu);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;}
+.wel-stat-v{font-size:1.15rem;font-weight:700;}
+/* Quick help */
+.wel-help-t{font-size:.65rem;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;width:100%;}
+.wel-help-links{width:100%;display:flex;flex-direction:column;gap:2px;}
+.wel-help-a{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:7px;border:none;background:none;cursor:pointer;color:var(--tx);width:100%;text-align:left;transition:background var(--tr);font-size:.82rem;font-weight:500;}
+.wel-help-a:hover{background:var(--sf2);}
+
+/* ── App page ─────────────────────────────────────────────── */
+#apppage{display:none;flex-direction:column;height:100%;overflow:hidden;}
+/* App header */
+.app-hdr{background:var(--sf);border-bottom:1px solid var(--br);padding:20px 24px 0;flex-shrink:0;}
+.app-bc{font-size:.73rem;color:var(--mu);margin-bottom:10px;}
+.app-bc span{color:var(--tx);font-weight:500;}
+.app-title-row{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap;}
+.app-name{font-size:1.3rem;font-weight:700;letter-spacing:-.01em;}
+.app-badge{font-size:.68rem;font-weight:700;padding:3px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.04em;}
+.badge-tg{background:#dbeafe;color:#1d4ed8;}
+.badge-dc{background:#ede9fe;color:#6d28d9;}
+.badge-wa{background:#d1fae5;color:#065f46;}
+.badge-vb{background:#fce7f3;color:#9d174d;}
+[data-dark] .badge-tg{background:rgba(29,78,216,.2);color:#60a5fa;}
+[data-dark] .badge-dc{background:rgba(109,40,217,.2);color:#a78bfa;}
+[data-dark] .badge-wa{background:rgba(6,95,70,.2);color:#34d399;}
+[data-dark] .badge-vb{background:rgba(157,23,77,.2);color:#f9a8d4;}
+.app-btns{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-bottom:14px;}
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:6px;border:none;font-size:.78rem;font-weight:600;cursor:pointer;transition:all var(--tr);white-space:nowrap;}
+.btn:disabled{opacity:.4;cursor:not-allowed !important;}
+.btn-pr{background:var(--pr);color:#fff;}
+.btn-pr:hover:not(:disabled){background:var(--pr2);}
+.btn-ok{background:#059669;color:#fff;}
+.btn-ok:hover:not(:disabled){background:#047857;}
+.btn-stop{background:#374151;color:#fff;}
+.btn-stop:hover:not(:disabled){background:#4b5563;}
+[data-dark] .btn-stop{background:#1f2937;}
+.btn-wa{background:#d97706;color:#fff;}
+.btn-wa:hover:not(:disabled){background:#b45309;}
+.btn-ghost{background:var(--sf2);border:1px solid var(--br);color:var(--tx);}
+.btn-ghost:hover:not(:disabled){background:var(--sf3);}
+.btn-danger{background:transparent;border:1px solid var(--er);color:var(--er);}
+.btn-danger:hover:not(:disabled){background:#fee2e2;}
+[data-dark] .btn-danger:hover:not(:disabled){background:rgba(220,38,38,.12);}
+/* Tabs */
+.tabs{display:flex;gap:0;border-bottom:none;}
+.tab{padding:10px 18px;border:none;background:none;color:var(--mu);font-size:.8rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:all var(--tr);letter-spacing:.01em;}
+.tab:hover:not(.act){color:var(--tx);}
+.tab.act{color:var(--pr);border-bottom-color:var(--pr);}
+/* App body */
+.app-body{flex:1;overflow:auto;}
+.pane{display:none;padding:24px;}
+.pane.act{display:block;}
+.pane.full{display:none;padding:0;height:100%;}
+.pane.full.act{display:flex;flex-direction:column;}
+
+/* ── Cards/sections ──────────────────────────────────────── */
+.card{background:var(--sf);border:1px solid var(--br);border-radius:var(--r);padding:16px 20px;margin-bottom:14px;}
+.card-t{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);margin-bottom:14px;}
+.info-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+.info-cell{background:var(--sf2);border-radius:6px;padding:12px 14px;}
+.info-cell-l{font-size:.65rem;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);margin-bottom:5px;}
+.info-cell-v{font-size:.88rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+/* autostart row */
+.auto-row{display:flex;align-items:center;justify-content:space-between;}
+.auto-row-left h3{font-size:.88rem;font-weight:600;}
+.auto-row-left p{font-size:.75rem;color:var(--mu);margin-top:2px;}
+.toggle{width:42px;height:24px;background:var(--muli);border-radius:12px;border:none;cursor:pointer;position:relative;transition:background var(--tr);flex-shrink:0;}
+.toggle::after{content:'';position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:3px;left:3px;transition:transform var(--tr);box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.toggle.on{background:var(--ok);}
+.toggle.on::after{transform:translateX(18px);}
+/* resource bars */
+.res-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.res-label{font-size:.72rem;color:var(--mu);margin-bottom:5px;}
+.res-val{font-size:1rem;font-weight:700;margin-bottom:6px;}
+.res-bar{height:5px;background:var(--sf3);border-radius:3px;overflow:hidden;}
+.res-fill{height:100%;border-radius:3px;transition:width .5s ease;}
+.res-fill.ok{background:var(--ok);}
+.res-fill.wa{background:var(--wa);}
+.res-fill.er{background:var(--er);}
+.res-hint{font-size:.68rem;color:var(--mu);margin-top:4px;}
+/* limits */
+.limits-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.fg label{display:block;font-size:.72rem;color:var(--mu);margin-bottom:4px;}
+.inp{width:100%;background:var(--sf2);border:1px solid var(--br);border-radius:6px;padding:8px 12px;color:var(--tx);font-size:.82rem;outline:none;transition:border-color var(--tr);}
+.inp:focus{border-color:var(--pr);}
+select.inp{cursor:pointer;}
+
+/* ── Config Vars (Heroku-style) ──────────────────────────── */
+.cfgvar-header{display:flex;align-items:center;gap:8px;padding:0 0 16px;}
+.cfgvar-header h2{font-size:1rem;font-weight:700;flex:1;}
+.cfgvar-note{background:var(--sf2);border:1px solid var(--br);border-radius:8px;padding:12px 16px;font-size:.78rem;color:var(--mu);margin-bottom:16px;line-height:1.7;}
+.cfgvar-note code{font-family:var(--m);background:var(--sf3);padding:1px 5px;border-radius:3px;font-size:.75rem;}
+.env-editor{width:100%;min-height:220px;max-height:60vh;background:var(--sf);border:1px solid var(--br);border-radius:8px;padding:14px;font-family:var(--m);font-size:.8rem;color:var(--tx);resize:vertical;outline:none;line-height:1.9;transition:border-color var(--tr);}
+.env-editor:focus{border-color:var(--pr);}
+
+/* ── Editor ──────────────────────────────────────────────── */
+.editor-layout{display:flex;height:100%;overflow:hidden;}
+.editor-sidebar{width:210px;border-right:1px solid var(--br);background:var(--sf);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;}
+.editor-sidebar-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--br);font-size:.72rem;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;}
+.file-list{flex:1;overflow-y:auto;padding:6px;}
+.file-item{display:flex;align-items:center;gap:7px;padding:7px 8px;border-radius:5px;cursor:pointer;transition:background var(--tr);font-family:var(--m);font-size:.76rem;color:var(--tx);}
+.file-item:hover{background:var(--sf2);}
+.file-item.act{background:var(--prl);color:var(--pr);}
+.file-size{font-size:.65rem;color:var(--mu);margin-left:auto;}
+.editor-main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.editor-toolbar{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--br);background:var(--sf);flex-shrink:0;}
+.editor-fname{font-family:var(--m);font-size:.8rem;color:var(--mu);}
+.editor-ta{flex:1;border:none;background:var(--sf2);color:var(--tx);font-family:var(--m);font-size:.78rem;padding:16px;resize:none;outline:none;line-height:1.8;}
+
+/* ── Files manager ───────────────────────────────────────── */
+.file-row{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--br);transition:background var(--tr);}
+.file-row:last-child{border-bottom:none;}
+.file-row:hover{background:var(--sf2);}
+.file-row-name{font-family:var(--m);font-size:.8rem;flex:1;}
+.file-row-size{font-size:.72rem;color:var(--mu);flex-shrink:0;}
+.icon-btn{width:28px;height:28px;border-radius:5px;border:none;background:none;color:var(--mu);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all var(--tr);flex-shrink:0;}
+.icon-btn:hover{background:var(--sf3);color:var(--tx);}
+.icon-btn.red:hover{background:#fee2e2;color:var(--er);}
+[data-dark] .icon-btn.red:hover{background:rgba(220,38,38,.15);}
+
+/* ── Logs ────────────────────────────────────────────────── */
+.log-wrap{height:100%;display:flex;flex-direction:column;}
+.log-toolbar{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--br);background:var(--sf);flex-shrink:0;}
+.log-body{flex:1;overflow-y:auto;padding:12px 16px;font-family:var(--m);font-size:.75rem;line-height:1.9;background:var(--sf);}
+.ll{white-space:pre-wrap;word-break:break-all;}
+.ll.e{color:#ef4444;}.ll.w{color:#f59e0b;}.ll.wd{color:var(--mu);font-style:italic;}.ll.o{color:var(--ok);}
+[data-dark] .ll.o{color:#86efac;}
+
+/* ── Activity ────────────────────────────────────────────── */
+.act-item{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--br);}
+.act-item:last-child{border-bottom:none;}
+.act-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;}
+.act-msg{font-size:.83rem;font-weight:500;}
+.act-ts{font-size:.72rem;color:var(--mu);margin-top:2px;}
+
+/* ── Diagnose ────────────────────────────────────────────── */
+.diag-row{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--sf);border:1px solid var(--br);border-radius:8px;margin-bottom:8px;}
+.diag-icon{font-size:1.1rem;flex-shrink:0;}
+.diag-check{font-size:.83rem;font-weight:600;}
+.diag-msg{font-size:.75rem;color:var(--mu);margin-top:1px;}
+
+/* ── Tooltips ────────────────────────────────────────────── */
+[data-tip]{position:relative;}
+[data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 7px);left:50%;transform:translateX(-50%);background:#1e293b;color:#e2e8f0;border:1px solid #334155;padding:5px 10px;border-radius:7px;font-size:11px;white-space:nowrap;z-index:9999;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.3);}
+[data-tip]:hover::before{content:'';position:absolute;bottom:calc(100% + 2px);left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#334155;z-index:9999;pointer-events:none;}
+
+/* ── Power menu ──────────────────────────────────────────── */
+.pwr-wrap{position:relative;}
+.pwr-menu{position:absolute;right:0;top:calc(100% + 8px);background:var(--sf);border:1px solid var(--br);border-radius:10px;min-width:260px;z-index:400;box-shadow:0 8px 30px rgba(0,0,0,.15);padding:6px;display:none;}
+[data-dark] .pwr-menu{box-shadow:0 8px 30px rgba(0,0,0,.5);}
+.pwr-menu.op{display:block;}
+.pwr-lbl{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);padding:6px 10px 4px;}
+.pwr-div{height:1px;background:var(--br);margin:4px 0;}
+.pwr-item{width:100%;display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:7px;border:none;background:none;cursor:pointer;color:var(--tx);font-size:.8rem;transition:background var(--tr);text-align:left;}
+.pwr-item:hover{background:var(--sf2);}
+.pwr-item.red:hover{background:#fee2e2;color:var(--er);}
+[data-dark] .pwr-item.red:hover{background:rgba(220,38,38,.12);}
+.pwr-item-ic{width:22px;text-align:center;flex-shrink:0;font-size:.9rem;}
+.pwr-item-t{font-weight:600;font-size:.8rem;}
+.pwr-item-s{font-size:.7rem;color:var(--mu);}
+
+/* ── More menu ───────────────────────────────────────────── */
+.more-menu{position:absolute;right:0;top:calc(100% + 6px);background:var(--sf);border:1px solid var(--br);border-radius:8px;min-width:200px;z-index:300;box-shadow:0 6px 20px rgba(0,0,0,.12);padding:5px;display:none;}
+[data-dark] .more-menu{box-shadow:0 6px 20px rgba(0,0,0,.4);}
+.more-menu.op{display:block;}
+.more-item{width:100%;display:flex;align-items:center;gap:9px;padding:8px 11px;border:none;background:none;cursor:pointer;color:var(--tx);border-radius:5px;font-size:.8rem;text-align:left;transition:background var(--tr);}
+.more-item:hover{background:var(--sf2);}
+.more-item.red{color:var(--er);}
+.more-item.red:hover{background:#fee2e2;}
+[data-dark] .more-item.red:hover{background:rgba(220,38,38,.12);}
+
+/* ── Op status modal ─────────────────────────────────────── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px);z-index:500;display:none;align-items:center;justify-content:center;padding:16px;}
+.overlay.op{display:flex;}
+.modal{background:var(--sf);border:1px solid var(--br);border-radius:12px;width:100%;max-width:480px;max-height:88vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);}
+[data-dark] .modal{box-shadow:0 20px 60px rgba(0,0,0,.6);}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--br);}
+.modal-t{font-size:.95rem;font-weight:700;}
+.modal-body{padding:20px;}
+.modal-foot{padding:14px 20px;border-top:1px solid var(--br);display:flex;justify-content:flex-end;gap:8px;}
+.mclose{width:28px;height:28px;border-radius:5px;border:none;background:none;color:var(--mu);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.9rem;}
+.mclose:hover{background:var(--sf2);}
+.spinner{width:48px;height:48px;border:3px solid var(--br);border-top-color:var(--pr);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 16px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.countdown{font-size:2.5rem;font-weight:700;color:var(--pr);margin:8px 0;}
+/* mode tabs */
+.mode-tabs{display:flex;background:var(--sf2);border-radius:7px;padding:3px;gap:3px;margin-bottom:18px;}
+.mode-tab{flex:1;padding:7px;border-radius:5px;border:none;font-size:.78rem;font-weight:600;cursor:pointer;transition:all var(--tr);background:none;color:var(--mu);}
+.mode-tab.act{background:var(--sf);color:var(--tx);box-shadow:0 1px 3px rgba(0,0,0,.1);}
+/* drop zone */
+.dropzone{border:2px dashed var(--br);border-radius:8px;padding:24px;text-align:center;cursor:pointer;transition:all var(--tr);font-size:.82rem;color:var(--mu);}
+.dropzone:hover,.dropzone.drag{border-color:var(--pr);background:var(--prl);}
+.dropzone-icon{font-size:1.5rem;margin-bottom:8px;}
+/* Toast */
+.toasts{position:fixed;bottom:20px;right:20px;z-index:2000;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.toast{background:var(--sf);border:1px solid var(--br);border-radius:9px;padding:11px 16px;font-size:.8rem;display:flex;align-items:center;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,.15);pointer-events:auto;animation:tin .2s ease;min-width:200px;max-width:320px;}
+[data-dark] .toast{box-shadow:0 4px 20px rgba(0,0,0,.5);}
+.toast.ok{border-left:3px solid var(--ok);}
+.toast.err{border-left:3px solid var(--er);}
+.toast.info{border-left:3px solid var(--pr);}
+@keyframes tin{from{transform:translateX(16px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* Help */
+.help-art-body{font-size:.84rem;line-height:1.9;color:var(--tx);}
+.help-art-body h3{font-size:.95rem;font-weight:700;margin-bottom:12px;}
+.help-art-body p{margin-bottom:10px;}
+.help-art-body ul{margin:6px 0 10px 20px;line-height:2;}
+.help-art-body code{font-family:var(--m);background:var(--sf2);padding:1px 5px;border-radius:3px;font-size:.78rem;}
+.help-art-body pre{background:var(--sf2);padding:10px 14px;border-radius:7px;overflow-x:auto;margin:8px 0;font-family:var(--m);font-size:.78rem;}
+.help-link{width:100%;display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:8px;border:none;background:none;cursor:pointer;color:var(--tx);text-align:left;transition:background var(--tr);font-size:.85rem;font-weight:500;}
+.help-link:hover{background:var(--sf2);}
+
+/* Responsive */
+@media(max-width:768px){
+  #sidebar{position:fixed;inset:0;z-index:200;width:280px;transform:translateX(-100%);transition:transform var(--tr);}
+  #sidebar.mob{transform:translateX(0);}
+  .info-grid{grid-template-columns:1fr;}
+  .wel-stats{grid-template-columns:repeat(2,1fr);}
+  .pane{padding:14px;}
+  #mob-btn{display:flex!important;}
+  #bg-canvas{display:none;}
+}
+
+/* Tour tooltip */
+.tour-tip{position:fixed;z-index:9000;background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:10px;padding:12px 16px;font-size:.8rem;max-width:240px;box-shadow:0 8px 30px rgba(0,0,0,.4);pointer-events:none;}
+.tour-tip-arrow{position:absolute;width:10px;height:10px;background:#1e293b;border:1px solid #334155;transform:rotate(45deg);}
+.tour-overlay{position:fixed;inset:0;z-index:8999;pointer-events:none;}
+.tour-highlight{outline:2px solid var(--pr);outline-offset:3px;border-radius:6px;z-index:9001;position:relative;}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ═══ HEADER ═══ -->
+<header id="hdr">
+  <div class="logo">
+    <div class="logo-box">
+      <svg width="18" height="18" fill="none" stroke="#fff" stroke-width="1.5" viewBox="0 0 24 24">
+        <rect x="2" y="9" width="20" height="12" rx="3"/>
+        <circle cx="8" cy="15" r="2.5" fill="#fff" stroke="none"/>
+        <circle cx="16" cy="15" r="2.5" fill="#fff" stroke="none"/>
+        <line x1="8" y1="3" x2="8" y2="9" stroke-linecap="round"/>
+        <line x1="16" y1="3" x2="16" y2="9" stroke-linecap="round"/>
+      </svg>
+    </div>
+    Bot Manager
+  </div>
+  <div class="hdr-divider"></div>
+  <div class="hdr-crumb" id="hdr-crumb"></div>
+  <div class="hdr-right">
+    <div class="conn" id="conn"></div>
+    <div class="pwr-wrap">
+      <button class="ico-btn danger" id="pwr-btn" onclick="togglePwr()" data-tip="Питание">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+      </button>
+      <div class="pwr-menu" id="pwr-menu">
+        <div class="pwr-lbl" id="pm-lbl">Питание</div>
+        <div class="pwr-div"></div>
+        <button class="pwr-item" onclick="pwrAction('panel','soft')">
+          <span class="pwr-item-ic" style="color:var(--pr)">↻</span>
+          <div><div class="pwr-item-t" id="pm-ps">Мягкий рестарт панели</div><div class="pwr-item-s" id="pm-ps-s">Боты продолжают работать</div></div>
+        </button>
+        <button class="pwr-item" onclick="pwrAction('panel','hard')">
+          <span class="pwr-item-ic" style="color:#8b5cf6">⏹</span>
+          <div><div class="pwr-item-t" id="pm-ph">Стоп ботов + рестарт</div><div class="pwr-item-s" id="pm-ph-s">Остановить всех, затем рестарт</div></div>
+        </button>
+        <div class="pwr-div"></div>
+        <button class="pwr-item" onclick="pwrAction('vds','soft')">
+          <span class="pwr-item-ic" style="color:var(--wa)">↻</span>
+          <div><div class="pwr-item-t" id="pm-vs">Мягкая перезагрузка VDS</div><div class="pwr-item-s" id="pm-vs-s">Корректное завершение ОС</div></div>
+        </button>
+        <button class="pwr-item red" onclick="pwrAction('vds','hard')">
+          <span class="pwr-item-ic">⚡</span>
+          <div><div class="pwr-item-t" id="pm-vh">Жёсткая перезагрузка VDS</div><div class="pwr-item-s" id="pm-vh-s">Только если сервер завис</div></div>
+        </button>
+        <div class="pwr-div"></div>
+        <button class="pwr-item" onclick="openSrvStatus()">
+          <span class="pwr-item-ic" style="color:var(--mu)">⟳</span>
+          <div class="pwr-item-t" id="pm-stat">Статус сервера</div>
+        </button>
+      </div>
+    </div>
+    <button class="ico-btn" onclick="openHelp()" data-tip="Справка">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </button>
+    <button class="ico-btn" onclick="openSettings()" data-tip="Настройки">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+    <button class="ico-btn" onclick="toggleDark()" data-tip="Тема">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+    <select class="lang-dd" id="lang-dd" onchange="setLang(this.value)">
+      <option value="ru">RU</option>
+      <option value="ua">UA</option>
+      <option value="en">EN</option>
+    </select>
+    <button class="ico-btn" id="mob-btn" onclick="toggleMob()" style="display:none">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+</header>
+
+<!-- ═══ BODY ═══ -->
+<div id="body">
+
+  <!-- Sidebar -->
+  <nav id="sidebar">
+    <div class="sb-top">
+      <input class="sb-search" id="sb-q" placeholder="/" oninput="filterBots(this.value)">
+    </div>
+    <div class="sb-section-lbl" id="sb-apps-lbl">Приложения</div>
+    <div class="sb-apps" id="sb-apps"></div>
+    <div class="sb-footer">
+      <button class="sb-new-btn" onclick="openCreate('new')" id="sb-new-btn">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span id="sb-new-lbl">Новый бот</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <main id="main">
+
+    <!-- Welcome -->
+    <div id="welcome">
+      <div class="welcome-inner">
+        <div class="wel-hero">
+          <div class="wel-icon">
+            <svg width="36" height="36" fill="none" stroke="#fff" stroke-width="1.5" viewBox="0 0 24 24">
+              <rect x="2" y="9" width="20" height="12" rx="3"/>
+              <circle cx="8" cy="15" r="2.5" fill="#fff" stroke="none"/>
+              <circle cx="16" cy="15" r="2.5" fill="#fff" stroke="none"/>
+              <line x1="8" y1="3" x2="8" y2="9" stroke-linecap="round"/>
+              <line x1="16" y1="3" x2="16" y2="9" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h1 class="wel-title" id="wel-t">Выберите проект</h1>
+          <p class="wel-sub" id="wel-s">Создайте бота или выберите из списка</p>
+        </div>
+
+        <button class="wel-cta" onclick="openCreate('new')">
+          <div class="wel-cta-icon">
+            <svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </div>
+          <div>
+            <div class="wel-cta-t" id="wel-cta-t">Создать приложение</div>
+            <div class="wel-cta-s">Telegram · Discord · WhatsApp · Viber</div>
+          </div>
+        </button>
+
+        <button class="wel-sec" onclick="openCreate('restore')">
+          <div class="wel-sec-icon">
+            <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </div>
+          <div>
+            <div style="font-weight:600;margin-bottom:1px" id="wel-rst-t">Восстановить из backup</div>
+            <div style="font-size:.72rem;color:var(--mu)" id="wel-rst-s">Загрузить .zip архив</div>
+          </div>
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-left:auto;opacity:.4"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+
+        <div class="wel-stats">
+          <div class="wel-stat"><div class="wel-stat-l">CPU</div><div class="wel-stat-v" id="w-cpu">—</div></div>
+          <div class="wel-stat"><div class="wel-stat-l">RAM</div><div class="wel-stat-v" id="w-ram">—</div></div>
+          <div class="wel-stat"><div class="wel-stat-l">DISK</div><div class="wel-stat-v" id="w-disk">—</div></div>
+          <div class="wel-stat"><div class="wel-stat-l" id="w-bots-l">BOTS</div><div class="wel-stat-v" id="w-bots">—</div></div>
+        </div>
+
+        <div class="wel-help-t" id="wel-help-t">Быстрая помощь</div>
+        <div class="wel-help-links" id="wel-help-links"></div>
+      </div>
+    </div>
+
+    <!-- App page -->
+    <div id="apppage">
+      <div class="app-hdr">
+        <div class="app-bc"><a href="#" onclick="goHome();return false">Bot Manager</a> / <span id="ap-pid"></span></div>
+        <div class="app-title-row">
+          <div class="app-name" id="ap-name"></div>
+          <span class="app-badge" id="ap-badge"></span>
+          <div style="margin-left:auto;display:flex;gap:8px;position:relative">
+            <button class="btn btn-ghost" id="more-btn" onclick="toggleMore()">
+              <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+              <span id="more-lbl">Ещё</span>
+            </button>
+            <div class="more-menu" id="more-menu">
+              <button class="more-item" onclick="showTab('lg');closeMore()"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg><span id="mm-logs">Логи</span></button>
+              <button class="more-item" onclick="dlBackup();closeMore()"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span id="mm-bkp">Backup .zip</span></button>
+              <button class="more-item" onclick="openRename();closeMore()"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span id="mm-ren">Переименовать</span></button>
+              <div style="height:1px;background:var(--br);margin:4px 0"></div>
+              <button class="more-item red" onclick="confirmDel();closeMore()"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg><span id="mm-del">Удалить</span></button>
+            </div>
+          </div>
+        </div>
+        <div class="app-btns">
+          <button class="btn btn-ok" onclick="botStart()" id="bt-start" data-tip="Запустить бота">
+            <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            <span id="bt-start-l">Старт</span>
+          </button>
+          <button class="btn btn-stop" onclick="botStop()" id="bt-stop" data-tip="Остановить бота">
+            <svg width="11" height="11" fill="currentColor" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16"/></svg>
+            <span id="bt-stop-l">Стоп</span>
+          </button>
+          <button class="btn btn-wa" onclick="botRestart()" id="bt-restart" data-tip="Перезапустить (Ctrl+S → Рестарт)">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            <span id="bt-restart-l">Рестарт</span>
+          </button>
+        </div>
+        <nav class="tabs" role="tablist">
+          <button class="tab act" id="tb-ov" onclick="showTab('ov')"><span id="tl-ov">Обзор</span></button>
+          <button class="tab" id="tb-ed" onclick="showTab('ed')"><span id="tl-ed">Редактор</span></button>
+          <button class="tab" id="tb-ev" onclick="showTab('ev')"><span id="tl-ev">Config Vars</span></button>
+          <button class="tab" id="tb-fm" onclick="showTab('fm')"><span id="tl-fm">Файлы</span></button>
+          <button class="tab" id="tb-lg" onclick="showTab('lg')"><span id="tl-lg">Логи</span></button>
+          <button class="tab" id="tb-ac" onclick="showTab('ac')"><span id="tl-ac">Activity</span></button>
+          <button class="tab" id="tb-dg" onclick="showTab('dg')"><span id="tl-dg">Диагностика</span></button>
+        </nav>
+      </div>
+
+      <div class="app-body">
+
+        <!-- Overview -->
+        <div class="pane act" id="pane-ov">
+          <div class="info-grid" style="margin-bottom:14px">
+            <div class="info-cell"><div class="info-cell-l" id="ic-status-l">Статус</div><div class="info-cell-v" id="ic-status">—</div></div>
+            <div class="info-cell"><div class="info-cell-l" id="ic-up-l">Аптайм</div><div class="info-cell-v" id="ic-up">—</div></div>
+            <div class="info-cell"><div class="info-cell-l">TOKEN</div><div class="info-cell-v" id="ic-tok" style="font-family:var(--m);font-size:.75rem;cursor:pointer" onclick="copyTok()" data-tip="Копировать">—</div></div>
+            <div class="info-cell"><div class="info-cell-l" id="ic-main-l">Файл</div><div class="info-cell-v" id="ic-main" style="font-family:var(--m)">—</div></div>
+            <div class="info-cell"><div class="info-cell-l" id="ic-cre-l">Создан</div><div class="info-cell-v" id="ic-cre">—</div></div>
+            <div class="info-cell"><div class="info-cell-l" id="ic-lang-l">Язык</div><div class="info-cell-v" id="ic-lang" style="font-family:var(--m)">—</div></div>
+          </div>
+
+          <div class="card">
+            <div class="card-t" id="ov-auto-t">Автозапуск</div>
+            <div class="auto-row">
+              <div class="auto-row-left">
+                <h3 id="ov-auto-h">Автозапуск включён</h3>
+                <p id="ov-auto-s">Бот запускается после перезагрузки сервера</p>
+              </div>
+              <button class="toggle" id="auto-sw" onclick="toggleAuto()"></button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-t" id="ov-res-t">Ресурсы</div>
+            <div class="res-grid">
+              <div>
+                <div class="res-label">RAM</div>
+                <div class="res-val" id="ov-ram">— MB</div>
+                <div class="res-bar"><div class="res-fill ok" id="ov-ram-fill" style="width:0%"></div></div>
+                <div class="res-hint" id="ov-ram-hint"></div>
+              </div>
+              <div>
+                <div class="res-label" id="ov-up-l">Аптайм</div>
+                <div class="res-val" id="ov-up2">—</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-t" id="ov-lim-t">Watchdog / Лимиты</div>
+            <div class="limits-grid">
+              <div class="fg"><label id="lim-ram-l">RAM лимит (MB)</label><input class="inp" type="number" id="lim-ram" min="32" max="4096" value="256"></div>
+              <div class="fg"><label id="lim-cpu-l">CPU лимит (%)</label><input class="inp" type="number" id="lim-cpu" min="10" max="100" value="80"></div>
+            </div>
+            <button class="btn btn-ghost" onclick="saveLimits()"><span id="lim-save-l">Сохранить</span></button>
+          </div>
+        </div>
+
+        <!-- Editor -->
+        <div class="pane full" id="pane-ed">
+          <div class="editor-layout">
+            <div class="editor-sidebar">
+              <div class="editor-sidebar-hdr">
+                <span id="ed-files-l">Файлы</span>
+                <button class="icon-btn" onclick="newFile()" data-tip="Создать файл">+</button>
+              </div>
+              <div class="file-list" id="ed-filelist"></div>
+            </div>
+            <div class="editor-main">
+              <div class="editor-toolbar">
+                <span class="editor-fname" id="ed-fname">—</span>
+                <div style="margin-left:auto">
+                  <button class="btn btn-ok" style="font-size:.73rem;padding:5px 12px" onclick="saveFile()" id="bt-save" data-tip="Ctrl+S">
+                    <span id="bt-save-l">Сохранить</span>
+                  </button>
+                </div>
+              </div>
+              <textarea class="editor-ta" id="editor" spellcheck="false" placeholder="Выберите файл..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Config Vars -->
+        <div class="pane" id="pane-ev">
+          <div class="cfgvar-header">
+            <h2 id="ev-t">Config Variables</h2>
+            <button class="btn btn-ok" onclick="saveEnv()" id="bt-env"><span id="bt-env-l">Сохранить</span></button>
+          </div>
+          <div class="cfgvar-note" id="ev-note">
+            Переменные доступны боту как переменные окружения.
+            Python: <code>os.environ.get('KEY')</code> · Node.js: <code>process.env.KEY</code>
+            Формат: <code>KEY=value</code> (по одной на строку). Не коммитить .env в git.
+          </div>
+          <textarea class="env-editor" id="env-ed" placeholder="BOT_TOKEN=123456:ABC...&#10;DATABASE_URL=postgresql://...&#10;DEBUG=false"></textarea>
+        </div>
+
+        <!-- Files -->
+        <div class="pane" id="pane-fm">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+            <h2 style="font-size:.95rem;font-weight:700;flex:1" id="fm-t">Файлы</h2>
+            <label class="btn btn-ghost" style="cursor:pointer" data-tip="Загрузить файл">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <span id="fm-up-l">Загрузить</span>
+              <input type="file" id="fm-inp" style="display:none" onchange="uploadFile(this)">
+            </label>
+          </div>
+          <div class="card" style="padding:0;overflow:hidden" id="fm-list"></div>
+        </div>
+
+        <!-- Logs -->
+        <div class="pane full" id="pane-lg">
+          <div class="log-wrap">
+            <div class="log-toolbar">
+              <select id="log-filter" class="inp" style="width:auto;padding:4px 8px;font-size:.75rem" onchange="logFilter=this.value">
+                <option value="all" id="lf-all">Все</option>
+                <option value="e" id="lf-err">Ошибки</option>
+                <option value="w" id="lf-warn">Предупреждения</option>
+                <option value="wd" id="lf-wd">Watchdog</option>
+              </select>
+              <div style="margin-left:auto;display:flex;gap:6px">
+                <button class="btn btn-ghost toggle" id="as-btn" style="width:auto;height:auto;padding:5px 12px;font-size:.73rem;border-radius:6px;font-family:var(--s);border:1px solid var(--br)" onclick="toggleAs()">
+                  <span id="as-l">Автопрокрутка</span>
+                </button>
+                <button class="btn btn-ghost" style="font-size:.73rem" onclick="clearLogs()"><span id="cl-l">Очистить</span></button>
+              </div>
+            </div>
+            <div class="log-body" id="log-body"></div>
+          </div>
+        </div>
+
+        <!-- Activity -->
+        <div class="pane" id="pane-ac">
+          <h2 style="font-size:.95rem;font-weight:700;margin-bottom:16px" id="ac-t">Activity</h2>
+          <div id="ac-list"></div>
+        </div>
+
+        <!-- Diagnose -->
+        <div class="pane" id="pane-dg">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+            <h2 style="font-size:.95rem;font-weight:700;flex:1" id="dg-t">Диагностика</h2>
+            <button class="btn btn-pr" onclick="runDiag()" id="bt-dg"><span id="bt-dg-l">Проверить</span></button>
+          </div>
+          <div id="dg-res"></div>
+        </div>
+
+      </div><!-- app-body -->
+    </div><!-- apppage -->
+  </main>
+</div>
+
+<!-- ═══ TOASTS ═══ -->
+<div class="toasts" id="toasts"></div>
+
+<!-- ═══ OP MODAL ═══ -->
+<div class="overlay" id="op-modal">
+  <div class="modal" style="max-width:340px">
+    <div class="modal-body" style="text-align:center;padding:28px 20px">
+      <div class="spinner" id="op-spin"></div>
+      <div style="font-size:.95rem;font-weight:700;margin-bottom:8px" id="op-t">Выполняется...</div>
+      <div style="font-size:.8rem;color:var(--mu)" id="op-s"></div>
+      <div class="countdown" id="op-cd" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CREATE MODAL ═══ -->
+<div class="overlay" id="modal-create">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-t" id="mc-t">Новый бот</div>
+      <button class="mclose" onclick="closeM('modal-create')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="mode-tabs">
+        <button class="mode-tab act" id="mt-new" onclick="setMode('new')"><span id="mt-new-l">✦ Новый бот</span></button>
+        <button class="mode-tab" id="mt-rst" onclick="setMode('restore')"><span id="mt-rst-l">⟳ Восстановить</span></button>
+        <button class="mode-tab" id="mt-gh" onclick="setMode('github')"><span id="mt-gh-l">⬇ GitHub</span></button>
+      </div>
+      <!-- New bot -->
+      <div id="mc-new">
+        <div class="fg" style="margin-bottom:12px">
+          <label class="inp" style="display:none"></label>
+          <label style="font-size:.72rem;color:var(--mu);margin-bottom:4px;display:block" id="mc-name-l">Название</label>
+          <input class="inp" id="mc-name" placeholder="my_telegram_bot">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <div class="fg">
+            <label style="font-size:.72rem;color:var(--mu);margin-bottom:4px;display:block" id="mc-plat-l">Платформа</label>
+            <select class="inp" id="mc-plat" onchange="onPlatChange()">
+              <option value="telegram">Telegram</option>
+              <option value="discord">Discord</option>
+              <option value="whatsapp">WhatsApp</option>
+              <option value="viber">Viber</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label style="font-size:.72rem;color:var(--mu);margin-bottom:4px;display:block" id="mc-lang-l">Язык</label>
+            <select class="inp" id="mc-lang">
+              <option value="python">Python</option>
+              <option value="node">Node.js</option>
+              <option value="php">PHP</option>
+              <option value="ruby">Ruby</option>
+            </select>
+          </div>
+        </div>
+        <div class="fg" style="margin-bottom:12px">
+          <label style="font-size:.72rem;color:var(--mu);margin-bottom:4px;display:block" id="mc-tok-l">Токен бота</label>
+          <input class="inp" id="mc-tok" placeholder="123456:ABC...">
+          <div style="font-size:.7rem;color:var(--mu);margin-top:4px" id="mc-tok-h">Получить у @BotFather в Telegram</div>
+        </div>
+        <div class="fg">
+          <label style="font-size:.72rem;color:var(--mu);margin-bottom:4px;display:block" id="mc-tpl-l">Шаблон кода</label>
+          <select class="inp" id="mc-tpl">
+            <option value="basic">Basic — /start /help</option>
+            <option value="echo">Echo — повтор сообщений</option>
+            <option value="menu">Menu — кнопки клавиатуры</option>
+            <option value="broadcast">Broadcast — рассылка</option>
+            <option value="inline">Inline — кнопки под сообщением</option>
+          </select>
+        </div>
+      </div>
+      <!-- Restore -->
+      <div id="mc-rst" style="display:none">
+        <div class="fg" style="margin-bottom:12px">
+          <label style="font-size:.72rem;color:var(--mu);margin-bottom:4px;display:block" id="mc-rname-l">Название (или оставь пустым)</label>
+          <input class="inp" id="mc-rname" placeholder="my_bot">
+        </div>
+        <div class="dropzone" id="mc-drop" onclick="document.getElementById('mc-zip').click()"
+          ondragover="event.preventDefault();this.classList.add('drag')"
+          ondragleave="this.classList.remove('drag')"
+          ondrop="onDrop(event)">
+          <div class="dropzone-icon">📦</div>
+          <div id="mc-drop-lbl" style="font-weight:600;margin-bottom:3px">Перетащи .zip или нажми</div>
+          <div style="font-size:.72rem;opacity:.7">bot_name_20260418.zip</div>
+        </div>
+        <input type="file" id="mc-zip" accept=".zip" style="display:none" onchange="onZip(this.files[0])">
+        <div id="mc-zip-ok" style="display:none;background:var(--sf2);border-radius:7px;padding:8px 12px;font-size:.78rem;margin-top:8px;color:var(--ok)"></div>
+      </div>
+      <!-- GitHub import -->
+      <div id="mc-gh" style="display:none">
+        <div class="fg" style="margin-bottom:12px">
+          <label style="font-size:.72rem;color:var(--mu);margin-bottom:4px;display:block">GitHub URL</label>
+          <input class="inp" id="gh-url" placeholder="https://github.com/user/repo">
+        </div>
+        <div class="fg" style="margin-bottom:12px">
+          <label style="font-size:.72rem;color:var(--mu);margin-bottom:4px;display:block">Ветка (необязательно)</label>
+          <input class="inp" id="gh-branch" placeholder="main">
+        </div>
+        <div class="fg">
+          <label style="font-size:.72rem;color:var(--mu);margin-bottom:4px;display:block">Название проекта</label>
+          <input class="inp" id="gh-name" placeholder="my_bot">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeM('modal-create')" id="mc-cancel">Отмена</button>
+      <button class="btn btn-pr" onclick="submitCreate()" id="mc-ok">Создать</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ RENAME MODAL ═══ -->
+<div class="overlay" id="modal-rename">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-hdr">
+      <div class="modal-t" id="ren-t">Переименовать</div>
+      <button class="mclose" onclick="closeM('modal-rename')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="fg" style="margin-bottom:8px">
+        <label style="font-size:.72rem;color:var(--mu);margin-bottom:4px;display:block" id="ren-l">Новое название</label>
+        <input class="inp" id="ren-inp">
+      </div>
+      <div style="font-size:.73rem;color:var(--mu)" id="ren-note">Название отображается в панели. Папка бота не переименовывается.</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeM('modal-rename')">Отмена</button>
+      <button class="btn btn-pr" onclick="submitRename()"><span id="ren-ok-l">Сохранить</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SETTINGS MODAL ═══ -->
+<div class="overlay" id="modal-settings">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-t" id="set-t">Настройки</div>
+      <button class="mclose" onclick="closeM('modal-settings')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="card">
+        <div class="card-t" id="set-pw-t">Пароль</div>
+        <div class="fg" style="margin-bottom:10px"><label style="font-size:.72rem;color:var(--mu);margin-bottom:4px;display:block" id="set-pw-l">Новый пароль</label><input class="inp" type="password" id="set-pw" placeholder="Минимум 4 символа"></div>
+        <button class="btn btn-pr" onclick="changePw()" style="font-size:.75rem"><span id="set-chpw-l">Изменить пароль</span></button>
+      </div>
+      <div class="card">
+        <div class="card-t" id="set-tok-t">Токен доступа</div>
+        <div style="font-size:.75rem;color:var(--mu);margin-bottom:10px" id="set-tok-s">Ссылка для входа без пароля</div>
+        <div style="display:flex;gap:8px;margin-bottom:6px">
+          <input class="inp" id="set-tok-v" readonly style="font-family:var(--m);font-size:.72rem;flex:1">
+          <button class="btn btn-ghost" onclick="copyLink()" data-tip="Копировать ссылку">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+          <button class="btn btn-wa" onclick="regenTok()"><span id="set-regen-l">Обновить</span></button>
+        </div>
+      </div>
+      <div class="card" id="srv-card" style="display:none">
+        <div class="card-t" id="set-srv-t">Статус сервера</div>
+        <div id="srv-body" style="font-family:var(--m);font-size:.75rem;color:var(--mu);line-height:2.1"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ HELP MODAL ═══ -->
+<div class="overlay" id="modal-help">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-hdr">
+      <div class="modal-t" id="help-t">Справка</div>
+      <button class="mclose" onclick="closeM('modal-help')">✕</button>
+    </div>
+    <div class="modal-body" style="max-height:72vh;overflow-y:auto">
+      <div id="help-list"></div>
+      <div id="help-art" style="display:none">
+        <button onclick="backToHelp()" style="display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--pr);cursor:pointer;font-size:.8rem;margin-bottom:16px;padding:0;font-weight:600">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          <span id="help-back-l">Назад</span>
+        </button>
+        <div id="help-art-body" class="help-art-body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ LOGIN ═══ -->
+<div id="login" style="position:fixed;inset:0;background:var(--bg);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px">
+  <div style="width:100%;max-width:360px">
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="width:56px;height:56px;background:var(--pr);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+        <svg width="28" height="28" fill="none" stroke="#fff" stroke-width="1.5" viewBox="0 0 24 24"><rect x="2" y="9" width="20" height="12" rx="3"/><circle cx="8" cy="15" r="2.5" fill="#fff" stroke="none"/><circle cx="16" cy="15" r="2.5" fill="#fff" stroke="none"/><line x1="8" y1="3" x2="8" y2="9" stroke-linecap="round"/><line x1="16" y1="3" x2="16" y2="9" stroke-linecap="round"/></svg>
+      </div>
+      <h1 style="font-size:1.3rem;font-weight:700;margin-bottom:6px">Bot Manager</h1>
+      <p style="color:var(--mu);font-size:.83rem" id="lg-sub">Войдите чтобы управлять ботами</p>
+    </div>
+    <div id="lg-form" style="display:none">
+      <div class="fg" style="margin-bottom:12px">
+        <label style="font-size:.72rem;color:var(--mu);margin-bottom:4px;display:block" id="lg-pw-l">Пароль</label>
+        <input class="inp" type="password" id="lg-pw" placeholder="Введите пароль...">
+      </div>
+      <button class="btn btn-pr" style="width:100%;justify-content:center;padding:10px;font-size:.88rem" onclick="doLogin()" id="lg-btn">
+        <span id="lg-btn-l">Войти</span>
+      </button>
+      <div id="lg-err" style="color:var(--er);font-size:.78rem;margin-top:8px;display:none;text-align:center"></div>
+    </div>
+    <button style="width:100%;padding:10px;margin-top:10px;background:var(--sf2);border:1px solid var(--br);border-radius:7px;color:var(--mu);cursor:pointer;font-size:.82rem;transition:all var(--tr)" onclick="showLoginForm()" id="lg-show-btn" onmouseover="this.style.background='var(--sf3)'" onmouseout="this.style.background='var(--sf2)'">
+      <span id="lg-show-l">Войти с паролем</span>
+    </button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// I18N — полный RU/UA/EN
+// ═══════════════════════════════════════════════════════════
+const T={
+ru:{
+  w_t:'Выберите проект',w_s:'Создайте бота или выберите из списка',
+  w_cta:'Создать приложение',w_rst:'Восстановить из backup',w_rst_s:'Загрузить .zip архив',
+  w_help:'Быстрая помощь',sb_apps:'Приложения',sb_new:'Новый бот',
+  tl_ov:'Обзор',tl_ed:'Редактор',tl_ev:'Config Vars',tl_fm:'Файлы',tl_lg:'Логи',tl_ac:'Activity',tl_dg:'Диагностика',
+  bt_start:'Старт',bt_stop:'Стоп',bt_restart:'Рестарт',bt_save:'Сохранить',
+  ic_status:'Статус',ic_up:'Аптайм',ic_main:'Файл',ic_cre:'Создан',ic_lang:'Язык',
+  ov_auto:'Автозапуск',ov_auto_h:'Автозапуск включён',ov_auto_s:'Бот запускается после перезагрузки сервера',
+  ov_res:'Ресурсы',ov_lim:'Watchdog / Лимиты',lim_ram:'RAM лимит (MB)',lim_cpu:'CPU лимит (%)',lim_save:'Сохранить',
+  ev_t:'Config Variables',ev_save:'Сохранить',
+  ev_note:'Переменные доступны боту как env vars. Python: os.environ.get("KEY") · Node.js: process.env.KEY. Формат: KEY=value (по одной на строку).',
+  fm_t:'Файлы',fm_up:'Загрузить',
+  ac_t:'Activity',dg_t:'Диагностика',dg_check:'Проверить',
+  ed_files:'Файлы',
+  lf_all:'Все',lf_err:'Ошибки',lf_warn:'Предупреждения',lf_wd:'Watchdog',as_l:'Автопрокрутка',cl_l:'Очистить',
+  mm_logs:'Просмотр логов',mm_bkp:'Backup .zip',mm_ren:'Переименовать',mm_del:'Удалить',more:'Ещё',
+  pm_lbl:'Питание',pm_ps:'Мягкий рестарт панели',pm_ps_s:'Боты продолжают работать',
+  pm_ph:'Стоп ботов + рестарт',pm_ph_s:'Остановить всех, затем рестарт',
+  pm_vs:'Мягкая перезагрузка VDS',pm_vs_s:'Корректное завершение ОС',
+  pm_vh:'Жёсткая перезагрузка VDS',pm_vh_s:'Только если сервер завис',
+  pm_stat:'Статус сервера',
+  set_t:'Настройки',set_pw_t:'Пароль',set_pw_l:'Новый пароль',set_chpw:'Изменить пароль',
+  set_tok_t:'Токен доступа',set_tok_s:'Ссылка для входа без пароля',set_regen:'Обновить',set_srv_t:'Статус сервера',
+  mc_t_new:'Новый бот',mc_t_rst:'Восстановить',mt_new:'✦ Новый бот',mt_rst:'⟳ Восстановить',
+  mc_name:'Название',mc_plat:'Платформа',mc_lang:'Язык',mc_tok:'Токен бота',
+  mc_tok_h:'Получить у @BotFather в Telegram',mc_tpl:'Шаблон кода',
+  mc_rname:'Название (или оставь пустым)',mc_drop:'Перетащи .zip или нажми',
+  mc_cancel:'Отмена',mc_ok_new:'Создать',mc_ok_rst:'Восстановить',
+  ren_t:'Переименовать',ren_l:'Новое название',ren_note:'Название отображается в панели. Папка не переименовывается.',ren_ok:'Сохранить',
+  help_t:'Справка',help_back:'Назад к статьям',
+  lg_sub:'Войдите чтобы управлять ботами',lg_pw:'Пароль',lg_btn:'Войти',lg_show:'Войти с паролем',
+  running:'Запущен',stopped:'Остановлен',
+  op_panel:'Перезапуск панели...',op_panel_s:'Страница обновится через несколько секунд',
+  op_vds:'Перезагрузка сервера...',op_vds_s:'Сервер перезагружается',
+  confirm_del:'Удалить проект и все файлы?',
+  confirm_vds:'Перезагрузить сервер?',
+  confirm_hard:'⚡ Жёсткая перезагрузка — мгновенный ресет. Продолжить?',
+  w_bots_l:'БОТЫ',
+},
+ua:{
+  w_t:'Виберіть проект',w_s:'Створіть бота або виберіть зі списку',
+  w_cta:'Створити застосунок',w_rst:'Відновити з backup',w_rst_s:'Завантажити .zip архів',
+  w_help:'Швидка допомога',sb_apps:'Застосунки',sb_new:'Новий бот',
+  tl_ov:'Огляд',tl_ed:'Редактор',tl_ev:'Config Vars',tl_fm:'Файли',tl_lg:'Логи',tl_ac:'Activity',tl_dg:'Діагностика',
+  bt_start:'Старт',bt_stop:'Стоп',bt_restart:'Рестарт',bt_save:'Зберегти',
+  ic_status:'Статус',ic_up:'Аптайм',ic_main:'Файл',ic_cre:'Створено',ic_lang:'Мова',
+  ov_auto:'Автозапуск',ov_auto_h:'Автозапуск увімкнено',ov_auto_s:'Бот запускається після перезавантаження',
+  ov_res:'Ресурси',ov_lim:'Watchdog / Ліміти',lim_ram:'RAM ліміт (MB)',lim_cpu:'CPU ліміт (%)',lim_save:'Зберегти',
+  ev_t:'Config Variables',ev_save:'Зберегти',
+  ev_note:'Змінні доступні боту як env vars. Python: os.environ.get("KEY") · Node.js: process.env.KEY. Формат: KEY=value.',
+  fm_t:'Файли',fm_up:'Завантажити',
+  ac_t:'Activity',dg_t:'Діагностика',dg_check:'Перевірити',ed_files:'Файли',
+  lf_all:'Всі',lf_err:'Помилки',lf_warn:'Попередження',lf_wd:'Watchdog',as_l:'Автопрокрутка',cl_l:'Очистити',
+  mm_logs:'Переглянути логи',mm_bkp:'Backup .zip',mm_ren:'Перейменувати',mm_del:'Видалити',more:'Ще',
+  pm_lbl:'Живлення',pm_ps:"М'який рестарт панелі",pm_ps_s:'Боти продовжують працювати',
+  pm_ph:'Стоп ботів + рестарт',pm_ph_s:'Зупинити всіх, потім рестарт',
+  pm_vs:"М'яке перезавантаження VDS",pm_vs_s:'Коректне завершення ОС',
+  pm_vh:'Жорстке перезавантаження VDS',pm_vh_s:'Тільки якщо сервер завис',
+  pm_stat:'Статус сервера',
+  set_t:'Налаштування',set_pw_t:'Пароль',set_pw_l:'Новий пароль',set_chpw:'Змінити пароль',
+  set_tok_t:'Токен доступу',set_tok_s:'Посилання для входу без пароля',set_regen:'Оновити',set_srv_t:'Статус сервера',
+  mc_t_new:'Новий бот',mc_t_rst:'Відновити',mt_new:'✦ Новий бот',mt_rst:'⟳ Відновити',
+  mc_name:'Назва',mc_plat:'Платформа',mc_lang:'Мова',mc_tok:'Токен бота',
+  mc_tok_h:'Отримати у @BotFather в Telegram',mc_tpl:'Шаблон коду',
+  mc_rname:"Назва (або залиш порожнім)",mc_drop:'Перетягни .zip або натисни',
+  mc_cancel:'Скасувати',mc_ok_new:'Створити',mc_ok_rst:'Відновити',
+  ren_t:'Перейменувати',ren_l:'Нова назва',ren_note:"Назва відображається в панелі. Папка не перейменовується.",ren_ok:'Зберегти',
+  help_t:'Довідка',help_back:'Назад до статей',
+  lg_sub:'Увійдіть щоб керувати ботами',lg_pw:'Пароль',lg_btn:'Увійти',lg_show:'Увійти з паролем',
+  running:'Запущено',stopped:'Зупинено',
+  op_panel:'Перезапуск панелі...',op_panel_s:'Сторінка оновиться за кілька секунд',
+  op_vds:'Перезавантаження сервера...',op_vds_s:'Сервер перезавантажується',
+  confirm_del:'Видалити проект і всі файли?',
+  confirm_vds:'Перезавантажити сервер?',
+  confirm_hard:'⚡ Жорстке перезавантаження — миттєвий ресет. Продовжити?',
+  w_bots_l:'БОТИ',
+},
+en:{
+  w_t:'Select a project',w_s:'Create a bot or choose from the list',
+  w_cta:'Create new app',w_rst:'Restore from backup',w_rst_s:'Upload .zip archive',
+  w_help:'Quick help',sb_apps:'Apps',sb_new:'New bot',
+  tl_ov:'Overview',tl_ed:'Editor',tl_ev:'Config Vars',tl_fm:'Files',tl_lg:'Logs',tl_ac:'Activity',tl_dg:'Diagnose',
+  bt_start:'Start',bt_stop:'Stop',bt_restart:'Restart',bt_save:'Save',
+  ic_status:'Status',ic_up:'Uptime',ic_main:'File',ic_cre:'Created',ic_lang:'Language',
+  ov_auto:'Autostart',ov_auto_h:'Autostart enabled',ov_auto_s:'Bot starts after server reboot',
+  ov_res:'Resources',ov_lim:'Watchdog / Limits',lim_ram:'RAM limit (MB)',lim_cpu:'CPU limit (%)',lim_save:'Save',
+  ev_t:'Config Variables',ev_save:'Save',
+  ev_note:'Variables available to bot as env vars. Python: os.environ.get("KEY") · Node.js: process.env.KEY. Format: KEY=value per line.',
+  fm_t:'Files',fm_up:'Upload',
+  ac_t:'Activity',dg_t:'Diagnose',dg_check:'Check',ed_files:'Files',
+  lf_all:'All',lf_err:'Errors',lf_warn:'Warnings',lf_wd:'Watchdog',as_l:'Autoscroll',cl_l:'Clear',
+  mm_logs:'View logs',mm_bkp:'Backup .zip',mm_ren:'Rename',mm_del:'Delete',more:'More',
+  pm_lbl:'Power',pm_ps:'Soft panel restart',pm_ps_s:'Bots keep running',
+  pm_ph:'Stop bots + restart',pm_ph_s:'Stop all bots, then restart',
+  pm_vs:'Soft VDS reboot',pm_vs_s:'Graceful OS shutdown',
+  pm_vh:'Hard VDS reboot',pm_vh_s:'Only if server is frozen',
+  pm_stat:'Server status',
+  set_t:'Settings',set_pw_t:'Password',set_pw_l:'New password',set_chpw:'Change password',
+  set_tok_t:'Access token',set_tok_s:'Login link without password',set_regen:'Regenerate',set_srv_t:'Server status',
+  mc_t_new:'New bot',mc_t_rst:'Restore',mt_new:'✦ New bot',mt_rst:'⟳ Restore',
+  mc_name:'Name',mc_plat:'Platform',mc_lang:'Language',mc_tok:'Bot token',
+  mc_tok_h:'Get from @BotFather in Telegram',mc_tpl:'Code template',
+  mc_rname:'Name (or leave empty)',mc_drop:'Drop .zip or click',
+  mc_cancel:'Cancel',mc_ok_new:'Create',mc_ok_rst:'Restore',
+  ren_t:'Rename',ren_l:'New name',ren_note:'Display name only. Bot folder is not renamed.',ren_ok:'Save',
+  help_t:'Help',help_back:'Back to articles',
+  lg_sub:'Log in to manage your bots',lg_pw:'Password',lg_btn:'Log in',lg_show:'Log in with password',
+  running:'Running',stopped:'Stopped',
+  op_panel:'Restarting panel...',op_panel_s:'Page will reload in a few seconds',
+  op_vds:'Rebooting server...',op_vds_s:'Server is rebooting',
+  confirm_del:'Delete project and all its files?',
+  confirm_vds:'Reboot the server?',
+  confirm_hard:'⚡ Hard reboot — instant reset. Continue?',
+  w_bots_l:'BOTS',
+},
+};
+
+// ── Help articles (RU/UA/EN) ──────────────────────────────
+const HELP={
+ru:[
+  {id:'create',icon:'🤖',t:'Как создать бота',b:`<h3>Как создать бота</h3>
+<p>Нажми кнопку <b>Создать приложение</b> на главном экране или <b>+ Новый бот</b> в боковой панели.</p>
+<p><b>Шаг 1 — Название.</b> Любое имя латиницей, например <code>my_telegram_bot</code>. Используется как идентификатор.</p>
+<p><b>Шаг 2 — Платформа.</b></p>
+<ul><li><b>Telegram</b> — самый простой старт, токен от @BotFather</li><li><b>Discord</b> — OAuth2 → Bot → Token</li><li><b>WhatsApp</b> — Meta Developers, Business API</li><li><b>Viber</b> — Viber Admin Panel</li></ul>
+<p><b>Шаг 3 — Язык.</b> Python (проще всего), Node.js, PHP, Ruby.</p>
+<p><b>Шаг 4 — Токен.</b> Вставь токен бота. Он автоматически передаётся в <code>BOT_TOKEN</code> переменную окружения.</p>
+<p><b>Шаг 5 — Шаблон.</b> Basic, Echo, Menu, Broadcast или Inline — готовый код сразу запускается.</p>
+<p>Нажми <b>Создать</b> — папка с кодом и зависимостями будет готова автоматически.</p>`},
+  {id:'token',icon:'🔑',t:'Токен Telegram (@BotFather)',b:`<h3>Получить токен Telegram</h3>
+<p>1. Открой Telegram, найди <b>@BotFather</b>.</p>
+<p>2. Отправь команду <code>/newbot</code></p>
+<p>3. Придумай имя (видят пользователи) и username (должен заканчиваться на <b>bot</b>).</p>
+<p>4. BotFather пришлёт токен:</p>
+<pre>1234567890:ABCdefGHIjklMNOpqrsTUV</pre>
+<p>Скопируй токен и вставь в поле <b>Токен бота</b> при создании.</p>
+<p><b>Важно:</b> токен хранится в env бота (<code>BOT_TOKEN</code>) и в коде шаблона. Никому не передавай — это полный доступ к боту.</p>`},
+  {id:'start',icon:'▶️',t:'Запуск, остановка, рестарт',b:`<h3>Управление ботом</h3>
+<p><b>Старт</b> — запустить бота. Бот запускается через несколько секунд, статус меняется на «Запущен».</p>
+<p><b>Стоп</b> — корректно остановить бота.</p>
+<p><b>Рестарт</b> — перезапустить. Удобно после изменения кода: сохрани файл → нажми Рестарт.</p>
+<p><b>Автозапуск</b> — включи тумблер на вкладке Обзор. Бот будет стартовать автоматически после перезагрузки сервера.</p>
+<p><b>Watchdog</b> — если бот упадёт с ошибкой, автоматически перезапустится через 3 секунды. В логах будет: <code>[WD] Crashed rc=1, restart in 3s...</code></p>`},
+  {id:'edit',icon:'✏️',t:'Редактирование кода',b:`<h3>Редактор кода</h3>
+<p>Перейди на вкладку <b>Редактор</b>. Слева — список файлов, нажми на нужный.</p>
+<p><b>Сохранить:</b> кнопка «Сохранить» или <code>Ctrl+S</code>.</p>
+<p><b>Применить изменения:</b> после сохранения нажми <b>Рестарт</b> на панели вверху.</p>
+<p><b>Токен</b> доступен в коде через переменную окружения:</p>
+<pre># Python
+BOT_TOKEN = os.environ.get('BOT_TOKEN', '')
+# Node.js
+const BOT_TOKEN = process.env.BOT_TOKEN</pre>
+<p><b>Создать файл:</b> кнопка «+» над списком файлов.</p>`},
+  {id:'env',icon:'⚙️',t:'Config Variables (.env)',b:`<h3>Config Variables</h3>
+<p>Вкладка <b>Config Vars</b> — переменные окружения для бота (аналог Heroku Config Vars).</p>
+<p>Формат: одна переменная на строку</p>
+<pre>BOT_TOKEN=123456:ABC...
+DATABASE_URL=postgresql://user:pass@host/db
+DEBUG=false
+API_KEY=your_secret_key</pre>
+<p>Доступ в коде:</p>
+<pre># Python
+import os
+db = os.environ.get('DATABASE_URL')
+# Node.js
+const db = process.env.DATABASE_URL</pre>
+<p>Применяются при следующем запуске бота. Нажми <b>Рестарт</b> после сохранения.</p>`},
+  {id:'logs',icon:'📋',t:'Логи в реальном времени',b:`<h3>Логи</h3>
+<p>Вкладка <b>Логи</b> — вывод бота в реальном времени через SSE.</p>
+<p><b>Цвета строк:</b></p>
+<ul><li style="color:#ef4444">Красный — ошибки (Error, Exception, Traceback, Critical)</li><li style="color:#f59e0b">Жёлтый — предупреждения (Warning)</li><li style="color:#10b981">Зелёный — обычный вывод</li><li style="color:#94a3b8">Серый [WD] — сообщения Watchdog</li></ul>
+<p><b>Частые причины ошибок:</b></p>
+<ul><li><code>ModuleNotFoundError</code> — нет библиотеки, проверь requirements.txt</li><li><code>Unauthorized (401)</code> — неверный токен бота</li><li><code>Conflict (409)</code> — бот запущен в другом месте</li><li><code>ConnectionError</code> — нет интернета или Telegram недоступен</li></ul>`},
+  {id:'backup',icon:'💾',t:'Backup и восстановление',b:`<h3>Backup</h3>
+<p><b>Скачать backup:</b> кнопка «Ещё» → «Backup .zip». Скачается архив со всеми файлами бота.</p>
+<p><b>Восстановить бота из backup:</b> главный экран → «Восстановить из backup» → загрузи .zip → укажи название.</p>
+<p>Язык программирования определяется автоматически по файлам в архиве:</p>
+<ul><li><code>bot.py</code> → Python</li><li><code>bot.js</code> → Node.js</li><li><code>bot.rb</code> → Ruby</li><li><code>bot.php</code> → PHP</li></ul>
+<p>💡 Делай backup перед важными изменениями. Храни резервные копии локально.</p>`},
+  {id:'power',icon:'🖥️',t:'Управление сервером',b:`<h3>Управление сервером (кнопка ⏻)</h3>
+<p><b>Мягкий рестарт панели</b> — перезапускает только сервис Bot Manager. Боты продолжают работать. Страница автоматически обновится через ~6 секунд.</p>
+<p><b>Стоп ботов + рестарт</b> — сначала корректно останавливает всех ботов, затем перезапускает панель. Боты с автозапуском поднимутся сами.</p>
+<p><b>Мягкая перезагрузка VDS</b> — <code>systemctl reboot</code>. ОС корректно завершает все процессы. После загрузки боты с автозапуском стартуют автоматически.</p>
+<p><b>Жёсткая перезагрузка VDS</b> — мгновенный ресет через sysrq. Использовать только если сервер завис и не реагирует на команды.</p>
+<p><b>Статус сервера</b> — показывает uptime, нагрузку, RAM, диск, статус nginx и панели.</p>`},
+],
+ua:[
+  {id:'create',icon:'🤖',t:'Як створити бота',b:`<h3>Як створити бота</h3>
+<p>Натисни <b>Створити застосунок</b> на головному екрані або <b>+ Новий бот</b> у боковій панелі.</p>
+<p><b>Крок 1 — Назва.</b> Будь-яке ім'я латиницею: <code>my_telegram_bot</code>.</p>
+<p><b>Крок 2 — Платформа.</b> Telegram (найпростіше), Discord, WhatsApp, Viber.</p>
+<p><b>Крок 3 — Мова.</b> Python, Node.js, PHP, Ruby.</p>
+<p><b>Крок 4 — Токен.</b> Вставте токен. Він автоматично передається як <code>BOT_TOKEN</code>.</p>
+<p><b>Крок 5 — Шаблон.</b> Basic, Echo, Menu, Broadcast або Inline.</p>
+<p>Натисни <b>Створити</b> — код і залежності готові автоматично.</p>`},
+  {id:'token',icon:'🔑',t:'Токен Telegram (@BotFather)',b:`<h3>Отримати токен Telegram</h3>
+<p>1. Знайди <b>@BotFather</b> у Telegram.</p>
+<p>2. Відправ <code>/newbot</code></p>
+<p>3. Вигадай ім'я та username (має закінчуватись на <b>bot</b>).</p>
+<p>4. BotFather надішле токен — скопіюй і встав у поле Токен.</p>
+<p><b>Важливо:</b> нікому не передавай токен — це повний доступ до бота.</p>`},
+  {id:'start',icon:'▶️',t:'Запуск, зупинка, рестарт',b:`<h3>Керування ботом</h3>
+<p><b>Старт</b> — запустити бота. <b>Стоп</b> — зупинити. <b>Рестарт</b> — перезапустити після змін коду.</p>
+<p><b>Автозапуск</b> — увімкни тумблер на вкладці Огляд. Бот стартує після перезавантаження сервера.</p>
+<p><b>Watchdog</b> — при падінні перезапускається через 3 секунди. В логах: <code>[WD] Crashed rc=1...</code></p>`},
+  {id:'edit',icon:'✏️',t:'Редагування коду',b:`<h3>Редактор коду</h3>
+<p>Вкладка <b>Редактор</b> → вибери файл зліва → редагуй.</p>
+<p><b>Зберегти:</b> кнопка «Зберегти» або <code>Ctrl+S</code>.</p>
+<p><b>Застосувати:</b> після збереження натисни <b>Рестарт</b>.</p>
+<p>Токен доступний через <code>os.environ.get('BOT_TOKEN')</code> (Python) або <code>process.env.BOT_TOKEN</code> (Node.js).</p>`},
+  {id:'env',icon:'⚙️',t:'Config Variables (.env)',b:`<h3>Config Variables</h3>
+<p>Вкладка <b>Config Vars</b> — змінні середовища для бота.</p>
+<p>Формат: одна змінна на рядок</p>
+<pre>DATABASE_URL=postgresql://...
+DEBUG=false</pre>
+<p>Python: <code>os.environ.get('KEY')</code> · Node.js: <code>process.env.KEY</code></p>
+<p>Застосовуються при наступному запуску. Після збереження — натисни Рестарт.</p>`},
+  {id:'logs',icon:'📋',t:'Логи в реальному часі',b:`<h3>Логи</h3>
+<p>Вкладка <b>Логи</b> — вивід бота в реальному часі.</p>
+<ul><li style="color:#ef4444">Червоний — помилки</li><li style="color:#f59e0b">Жовтий — попередження</li><li style="color:#10b981">Зелений — звичайний вивід</li><li style="color:#94a3b8">[WD] — Watchdog</li></ul>
+<p>Часті помилки: <code>ModuleNotFoundError</code> — немає бібліотеки; <code>Unauthorized</code> — невірний токен.</p>`},
+  {id:'backup',icon:'💾',t:'Backup і відновлення',b:`<h3>Backup</h3>
+<p><b>Завантажити:</b> «Ще» → «Backup .zip».</p>
+<p><b>Відновити:</b> головний екран → «Відновити з backup» → завантаж .zip.</p>
+<p>Мова визначається автоматично: <code>bot.py</code>→Python, <code>bot.js</code>→Node.js тощо.</p>`},
+  {id:'power',icon:'🖥️',t:'Керування сервером',b:`<h3>Керування сервером (кнопка ⏻)</h3>
+<p><b>М'який рестарт панелі</b> — перезапускає Bot Manager, боти працюють далі.</p>
+<p><b>Стоп ботів + рестарт</b> — зупиняє всіх ботів, потім рестарт.</p>
+<p><b>М'яке перезавантаження VDS</b> — коректне завершення ОС.</p>
+<p><b>Жорстке перезавантаження</b> — миттєвий ресет через sysrq. Тільки якщо сервер завис.</p>`},
+],
+en:[
+  {id:'create',icon:'🤖',t:'How to create a bot',b:`<h3>Create a bot</h3>
+<p>Click <b>Create new app</b> on the main screen or <b>+ New bot</b> in the sidebar.</p>
+<p><b>Step 1 — Name.</b> Any Latin name: <code>my_telegram_bot</code>.</p>
+<p><b>Step 2 — Platform.</b> Telegram (easiest), Discord, WhatsApp, Viber.</p>
+<p><b>Step 3 — Language.</b> Python, Node.js, PHP, Ruby.</p>
+<p><b>Step 4 — Token.</b> Paste the bot token. Automatically available as <code>BOT_TOKEN</code> env var.</p>
+<p><b>Step 5 — Template.</b> Basic, Echo, Menu, Broadcast, or Inline — ready to run.</p>
+<p>Click <b>Create</b> — code and dependencies are set up automatically.</p>`},
+  {id:'token',icon:'🔑',t:'Telegram token (@BotFather)',b:`<h3>Get Telegram token</h3>
+<p>1. Find <b>@BotFather</b> in Telegram.</p>
+<p>2. Send <code>/newbot</code></p>
+<p>3. Choose a name (visible to users) and username (must end in <b>bot</b>).</p>
+<p>4. BotFather sends a token — copy and paste it into the Token field.</p>
+<p><b>Important:</b> never share your token — it grants full bot access.</p>`},
+  {id:'start',icon:'▶️',t:'Start, stop, restart',b:`<h3>Bot control</h3>
+<p><b>Start</b> — launch the bot. <b>Stop</b> — stop it. <b>Restart</b> — restart after code changes.</p>
+<p><b>Autostart</b> — enable in Overview. Bot starts automatically after server reboot.</p>
+<p><b>Watchdog</b> — auto-restarts on crash after 3 seconds. Logs: <code>[WD] Crashed rc=1, restart in 3s...</code></p>`},
+  {id:'edit',icon:'✏️',t:'Edit code',b:`<h3>Code editor</h3>
+<p><b>Editor</b> tab → pick a file on the left → edit.</p>
+<p><b>Save:</b> Save button or <code>Ctrl+S</code>.</p>
+<p><b>Apply:</b> after saving click <b>Restart</b>.</p>
+<p>Token is available via <code>os.environ.get('BOT_TOKEN')</code> (Python) or <code>process.env.BOT_TOKEN</code> (Node.js).</p>`},
+  {id:'env',icon:'⚙️',t:'Config Variables (.env)',b:`<h3>Config Variables</h3>
+<p><b>Config Vars</b> tab — environment variables for the bot (like Heroku Config Vars).</p>
+<p>Format: one variable per line</p>
+<pre>DATABASE_URL=postgresql://...
+DEBUG=false</pre>
+<p>Python: <code>os.environ.get('KEY')</code> · Node.js: <code>process.env.KEY</code></p>
+<p>Applied on next bot start. Click Restart after saving.</p>`},
+  {id:'logs',icon:'📋',t:'Real-time logs',b:`<h3>Logs</h3>
+<p><b>Logs</b> tab — real-time bot output via SSE.</p>
+<ul><li style="color:#ef4444">Red — errors (Error, Traceback)</li><li style="color:#f59e0b">Yellow — warnings</li><li style="color:#10b981">Green — normal output</li><li style="color:#94a3b8">[WD] — Watchdog</li></ul>
+<p>Common errors: <code>ModuleNotFoundError</code> — missing library; <code>Unauthorized</code> — bad token; <code>Conflict</code> — bot running elsewhere.</p>`},
+  {id:'backup',icon:'💾',t:'Backup & restore',b:`<h3>Backup</h3>
+<p><b>Download:</b> More → Backup .zip.</p>
+<p><b>Restore:</b> main screen → Restore from backup → upload .zip.</p>
+<p>Language auto-detected: <code>bot.py</code>→Python, <code>bot.js</code>→Node.js, etc.</p>`},
+  {id:'power',icon:'🖥️',t:'Server management',b:`<h3>Server management (⏻ button)</h3>
+<p><b>Soft panel restart</b> — restarts Bot Manager only. Bots keep running.</p>
+<p><b>Stop bots + restart</b> — stops all bots, then restarts panel.</p>
+<p><b>Soft VDS reboot</b> — graceful OS shutdown via <code>systemctl reboot</code>.</p>
+<p><b>Hard reboot</b> — instant reset via sysrq. Only if server is completely frozen.</p>`},
+],
+};
+
+// ═══════════════════════════════════════════════════════════
+// CORE
+// ═══════════════════════════════════════════════════════════
+const g = id => document.getElementById(id);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const fmtUp = s => { if(!s)return'—'; const d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60),sec=s%60; return d?`${d}d ${h}h`:h?`${h}h ${m}m`:`${m}m ${sec}s`; };
+const fmtMem = mb => mb>=1024?`${(mb/1024).toFixed(1)}GB`:`${mb}MB`;
+
+let lang='ru', token='', cur=null, projects=[], curFile='';
+let logEs=null, pollT=null, logFilter='all', autoScroll=true;
+let restoreFile=null;
+
+// ── Lang ──────────────────────────────────────────────────
+function i(k){ return (T[lang]||T.en)[k]||k; }
+function setText(id,key){ const e=g(id); if(e)e.textContent=i(key); }
+function setLang(l){ lang=l; localStorage.setItem('bm-lang',l); applyLang(); }
+function applyLang(){
+  g('lang-dd').value=lang;
+  setText('wel-t','w_t');setText('wel-s','w_s');setText('wel-cta-t','w_cta');
+  setText('wel-rst-t','w_rst');setText('wel-rst-s','w_rst_s');setText('wel-help-t','w_help');
+  setText('sb-apps-lbl','sb_apps');setText('sb-new-lbl','sb_new');
+  setText('tl-ov','tl_ov');setText('tl-ed','tl_ed');setText('tl-ev','tl_ev');
+  setText('tl-fm','tl_fm');setText('tl-lg','tl_lg');setText('tl-ac','tl_ac');setText('tl-dg','tl_dg');
+  setText('bt-start-l','bt_start');setText('bt-stop-l','bt_stop');setText('bt-restart-l','bt_restart');
+  setText('bt-save-l','bt_save');
+  setText('ic-status-l','ic_status');setText('ic-up-l','ic_up');setText('ic-main-l','ic_main');
+  setText('ic-cre-l','ic_cre');setText('ic-lang-l','ic_lang');
+  setText('ov-auto-t','ov_auto');setText('ov-auto-h','ov_auto_h');setText('ov-auto-s','ov_auto_s');
+  setText('ov-res-t','ov_res');setText('ov-lim-t','ov_lim');
+  setText('lim-ram-l','lim_ram');setText('lim-cpu-l','lim_cpu');setText('lim-save-l','lim_save');
+  setText('ev-t','ev_t');setText('bt-env-l','ev_save');setText('ev-note','ev_note');
+  setText('fm-t','fm_t');setText('fm-up-l','fm_up');setText('ed-files-l','ed_files');
+  setText('ac-t','ac_t');setText('dg-t','dg_t');setText('bt-dg-l','dg_check');
+  setText('lf-all','lf_all');setText('lf-err','lf_err');setText('lf-warn','lf_warn');setText('lf-wd','lf_wd');
+  setText('as-l','as_l');setText('cl-l','cl_l');
+  setText('mm-logs','mm_logs');setText('mm-bkp','mm_bkp');setText('mm-ren','mm_ren');setText('mm-del','mm_del');
+  setText('more-lbl','more');
+  setText('pm-lbl','pm_lbl');setText('pm-ps','pm_ps');setText('pm-ps-s','pm_ps_s');
+  setText('pm-ph','pm_ph');setText('pm-ph-s','pm_ph_s');
+  setText('pm-vs','pm_vs');setText('pm-vs-s','pm_vs_s');
+  setText('pm-vh','pm_vh');setText('pm-vh-s','pm_vh_s');setText('pm-stat','pm_stat');
+  setText('set-t','set_t');setText('set-pw-t','set_pw_t');setText('set-pw-l','set_pw_l');
+  setText('set-chpw-l','set_chpw');setText('set-tok-t','set_tok_t');setText('set-tok-s','set_tok_s');
+  setText('set-regen-l','set_regen');setText('set-srv-t','set_srv_t');
+  setText('mc-name-l','mc_name');setText('mc-plat-l','mc_plat');setText('mc-lang-l','mc_lang');
+  setText('mc-tok-l','mc_tok');setText('mc-tok-h','mc_tok_h');setText('mc-tpl-l','mc_tpl');
+  setText('mc-rname-l','mc_rname');setText('mc-drop-lbl','mc_drop');
+  setText('mc-cancel','mc_cancel');setText('mt-new-l','mt_new');setText('mt-rst-l','mt_rst');
+  setText('ren-t','ren_t');setText('ren-l','ren_l');setText('ren-note','ren_note');setText('ren-ok-l','ren_ok');
+  setText('help-t','help_t');setText('help-back-l','help_back');
+  setText('lg-sub','lg_sub');setText('lg-pw-l','lg_pw');setText('lg-btn-l','lg_btn');setText('lg-show-l','lg_show');
+  setText('ov-up-l','ic_up');setText('w-bots-l','w_bots_l');
+  renderHelp();renderWelHelp();
+}
+
+// ── Theme ─────────────────────────────────────────────────
+function toggleDark(){
+  const dark=!document.documentElement.hasAttribute('data-dark');
+  dark?document.documentElement.setAttribute('data-dark',''):document.documentElement.removeAttribute('data-dark');
+  localStorage.setItem('bm-dark',dark?'1':'');
+}
+(()=>{ if(localStorage.getItem('bm-dark')==='1')document.documentElement.setAttribute('data-dark',''); })();
+
+// ── API ───────────────────────────────────────────────────
+async function api(method,path,body){
+  const opts={method,headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}};
+  if(body!==undefined)opts.body=JSON.stringify(body);
+  const r=await fetch('/api'+path,opts);
+  if(r.status===401){logout();throw new Error('Unauthorized');}
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(d.error||r.statusText);
+  return d;
+}
+
+// ── Auth ──────────────────────────────────────────────────
+function getUrlToken(){ try{return new URL(location.href).searchParams.get('token')||'';}catch{return '';} }
+
+async function initApp(){
+  g('login').style.display='none';
+  if(history.replaceState)history.replaceState(null,'',location.pathname);
+  localStorage.setItem('bm_token',token);
+  await loadProjects();
+  startPolling(); startConn();
+  applyLang(); updateWelStats(); loadTok();
+}
+function logout(){ token=''; localStorage.removeItem('bm_token'); g('login').style.display='flex'; }
+function showLoginForm(){ g('lg-form').style.display='block'; g('lg-show-btn').style.display='none'; setTimeout(()=>g('lg-pw').focus(),50); }
+
+async function doLogin(){
+  const pw=g('lg-pw').value.trim(); if(!pw)return;
+  g('lg-btn').disabled=true; g('lg-err').style.display='none';
+  try{
+    const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})});
+    const d=await r.json();
+    if(!r.ok){g('lg-err').textContent=d.error||'Error';g('lg-err').style.display='block';g('lg-btn').disabled=false;return;}
+    token=d.token; await initApp();
+  }catch(e){g('lg-err').textContent=e.message;g('lg-err').style.display='block';g('lg-btn').disabled=false;}
+}
+
+(async()=>{
+  // Init lang
+  const saved=localStorage.getItem('bm-lang');
+  if(saved)lang=saved;
+  else{ const bl=(navigator.language||'en').toLowerCase().slice(0,2); lang=bl==='ru'?'ru':bl==='uk'?'ua':'en'; }
+  applyLang();
+
+  const ut=getUrlToken();
+  if(ut){token=ut;try{await api('GET','/ping');await initApp();return;}catch{token='';}}
+  const sv=localStorage.getItem('bm_token');
+  if(sv){token=sv;try{await api('GET','/ping');await initApp();return;}catch{token='';localStorage.removeItem('bm_token');}}
+  g('login').style.display='flex';
+  g('lg-pw').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+})();
+
+// ── Projects ──────────────────────────────────────────────
+async function loadProjects(){
+  try{projects=await api('GET','/projects');}catch{return;}
+  renderSidebar();
+  if(cur){const p=projects.find(x=>x.id===cur.id);if(p){cur=p;renderOv();}else goHome();}
+}
+function filterBots(q){renderSidebar(q);}
+function renderSidebar(q=''){
+  const fl=projects.filter(p=>!q||p.name.toLowerCase().includes(q.toLowerCase())||p.id.includes(q));
+  g('sb-apps').innerHTML=fl.map(p=>`
+    <div class="sb-app${cur&&cur.id===p.id?' act':''}" onclick="selBot('${p.id}')">
+      <div class="sb-app-dot ${p.running?'on':'off'}"></div>
+      <div class="sb-app-name">${esc(p.name)}</div>
+      <div class="sb-app-meta">
+        <span class="sb-app-lang">${p.lang}</span>
+        ${p.running?`<span class="sb-app-up">${fmtUp(p.uptime)}</span>`:''}
+      </div>
+    </div>`).join('');
+}
+
+async function selBot(pid){
+  const p=projects.find(x=>x.id===pid);if(!p)return;
+  cur=p; renderSidebar(g('sb-q').value||'');
+  g('welcome').style.display='none';
+  g('apppage').style.display='flex';g('apppage').style.flexDirection='column';
+  g('hdr-crumb').textContent=p.name;
+  renderOv(); showTab('ov');
+  startLogs(pid); loadAc();
+}
+function goHome(){
+  cur=null; g('welcome').style.display='flex'; g('apppage').style.display='none';
+  g('hdr-crumb').textContent='';
+  if(logEs){logEs.close();logEs=null;}
+  renderSidebar(); updateWelStats();
+}
+
+// ── Overview ──────────────────────────────────────────────
+function renderOv(){
+  if(!cur)return; const p=cur;
+  g('ap-name').textContent=p.name; g('ap-pid').textContent=p.id;
+  const bc={telegram:'badge-tg',discord:'badge-dc',whatsapp:'badge-wa',viber:'badge-vb'};
+  g('ap-badge').className='app-badge '+(bc[p.platform]||'badge-tg');
+  g('ap-badge').textContent=p.platform;
+  g('ic-status').textContent=p.running?i('running'):i('stopped');
+  g('ic-status').style.color=p.running?'var(--ok)':'var(--mu)';
+  g('ic-up').textContent=fmtUp(p.uptime);
+  g('ic-tok').textContent=p.token?(p.token.slice(0,18)+'…'):'—';
+  g('ic-main').textContent=p.main||'—';
+  g('ic-cre').textContent=(p.created||'').slice(0,10)||'—';
+  g('ic-lang').textContent=p.lang||'python';
+  g('lim-ram').value=p.ram_limit||256; g('lim-cpu').value=p.cpu_limit||80;
+  const sw=g('auto-sw'); sw.classList.toggle('on',!!p.autostart);
+  g('bt-start').disabled=p.running; g('bt-stop').disabled=!p.running; g('bt-restart').disabled=!p.running;
+  loadMetrics();
+}
+async function loadMetrics(){
+  if(!cur)return;
+  try{
+    const m=await api('GET',`/projects/${cur.id}/metrics`);
+    if(m.running){
+      const pct=Math.round(m.ram/(m.ram_limit||256)*100);
+      g('ov-ram').textContent=fmtMem(m.ram);
+      const f=g('ov-ram-fill');f.style.width=Math.min(pct,100)+'%';
+      f.className='res-fill '+(pct>85?'er':pct>70?'wa':'ok');
+      g('ov-ram-hint').textContent=`Лимит: ${m.ram_limit||256} MB`;
+      g('ov-up2').textContent=fmtUp(m.uptime);
+    }
+  }catch{}
+}
+
+// ── Tabs ──────────────────────────────────────────────────
+const TABS=['ov','ed','ev','fm','lg','ac','dg'];
+function showTab(id){
+  TABS.forEach(t=>{
+    const p=g('pane-'+t),b=g('tb-'+t);
+    if(p){p.classList.remove('act');}
+    if(b)b.classList.toggle('act',t===id);
+  });
+  const pane=g('pane-'+id);
+  if(pane)pane.classList.add('act');
+  if(id==='ed')loadEdFiles();
+  if(id==='fm')loadFm();
+  if(id==='ev')loadEnv();
+  if(id==='dg')runDiag();
+  if(id==='ac')loadAc();
+}
+
+// ── Bot controls ──────────────────────────────────────────
+async function botStart(){if(!cur)return;g('bt-start').disabled=true;try{await api('POST',`/projects/${cur.id}/start`);toast(i('running'),'ok');await loadProjects();}catch(e){toast(e.message,'err');g('bt-start').disabled=false;}}
+async function botStop(){if(!cur)return;try{await api('POST',`/projects/${cur.id}/stop`);toast(i('stopped'),'ok');await loadProjects();}catch(e){toast(e.message,'err');}}
+async function botRestart(){if(!cur)return;g('bt-restart').disabled=true;try{await api('POST',`/projects/${cur.id}/restart`);toast('Restarted','ok');await loadProjects();}catch(e){toast(e.message,'err');}}
+async function toggleAuto(){if(!cur)return;const sw=g('auto-sw');const v=!sw.classList.contains('on');try{await api('POST',`/projects/${cur.id}/autostart`,{enabled:v});sw.classList.toggle('on',v);cur.autostart=v;}catch(e){toast(e.message,'err');}}
+async function saveLimits(){if(!cur)return;try{await api('POST',`/projects/${cur.id}/limits`,{ram_limit:parseInt(g('lim-ram').value),cpu_limit:parseInt(g('lim-cpu').value)});toast('Saved','ok');}catch(e){toast(e.message,'err');}}
+async function confirmDel(){if(!cur||!confirm(i('confirm_del')+' "'+cur.name+'"?'))return;try{await api('DELETE',`/projects/${cur.id}`);toast('Deleted','ok');goHome();await loadProjects();}catch(e){toast(e.message,'err');}}
+async function copyTok(){if(!cur)return;navigator.clipboard.writeText(cur.token||'').then(()=>toast('Copied','ok'));}
+
+// ── Editor ────────────────────────────────────────────────
+async function loadEdFiles(){
+  if(!cur)return;
+  try{
+    const fl=await api('GET',`/projects/${cur.id}/files`);
+    g('ed-filelist').innerHTML=fl.map(f=>`
+      <div class="file-item${f.name===curFile?' act':''}" onclick="openFile('${esc(f.name)}')">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        ${esc(f.name)}
+        <span class="file-size">${(f.size/1024).toFixed(1)}K</span>
+      </div>`).join('');
+  }catch(e){toast(e.message,'err');}
+}
+async function openFile(fn){
+  if(!cur)return; curFile=fn;
+  try{const d=await api('GET',`/projects/${cur.id}/files/${encodeURIComponent(fn)}`);g('editor').value=d.content||'';g('ed-fname').textContent=fn;}
+  catch(e){toast(e.message,'err');}
+  loadEdFiles();
+}
+async function saveFile(){
+  if(!cur||!curFile)return;
+  try{await api('PUT',`/projects/${cur.id}/files/${encodeURIComponent(curFile)}`,{content:g('editor').value});toast(i('bt_save'),'ok');}
+  catch(e){toast(e.message,'err');}
+}
+async function newFile(){
+  const name=prompt('Имя файла:');if(!name||!cur)return;
+  try{await api('POST',`/projects/${cur.id}/files`,{name});loadEdFiles();}catch(e){toast(e.message,'err');}
+}
+g('editor').addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();saveFile();}});
+
+// ── Config Vars ───────────────────────────────────────────
+async function loadEnv(){if(!cur)return;try{const d=await api('GET',`/projects/${cur.id}/env`);g('env-ed').value=d.content||'';}catch(e){toast(e.message,'err');}}
+async function saveEnv(){if(!cur)return;try{await api('PUT',`/projects/${cur.id}/env`,{content:g('env-ed').value});toast(i('ev_save'),'ok');}catch(e){toast(e.message,'err');}}
+
+// ── Files ─────────────────────────────────────────────────
+async function loadFm(){
+  if(!cur)return;
+  try{
+    const fl=await api('GET',`/projects/${cur.id}/files`);
+    g('fm-list').innerHTML=fl.length?fl.map(f=>`
+      <div class="file-row">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <div class="file-row-name">${esc(f.name)}</div>
+        <div class="file-row-size">${(f.size/1024).toFixed(1)} KB</div>
+        <a href="/api/projects/${cur.id}/download/${encodeURIComponent(f.name)}?token=${token}" class="icon-btn" download data-tip="Скачать" style="text-decoration:none">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </a>
+        <button class="icon-btn red" onclick="delFile('${esc(f.name)}')" data-tip="Удалить">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        </button>
+      </div>`).join(''):`<div style="padding:20px;text-align:center;color:var(--mu);font-size:.82rem">Нет файлов</div>`;
+  }catch(e){toast(e.message,'err');}
+}
+async function delFile(fn){if(!cur||!confirm('Удалить '+fn+'?'))return;try{await api('DELETE',`/projects/${cur.id}/files/${encodeURIComponent(fn)}`);loadFm();}catch(e){toast(e.message,'err');}}
+async function uploadFile(inp){
+  if(!cur||!inp.files[0])return;
+  const fd=new FormData();fd.append('file',inp.files[0]);
+  try{await fetch(`/api/projects/${cur.id}/upload`,{method:'POST',headers:{Authorization:'Bearer '+token},body:fd});toast('Загружено','ok');loadFm();}
+  catch(e){toast(e.message,'err');}
+  inp.value='';
+}
+function dlBackup(){if(!cur)return;window.open(`/api/projects/${cur.id}/backup?token=${token}`,'_blank');}
+
+// ── Logs ──────────────────────────────────────────────────
+function startLogs(pid){
+  if(logEs){logEs.close();logEs=null;}
+  g('log-body').innerHTML='';
+  logEs=new EventSource(`/api/projects/${pid}/logs?token=${token}`);
+  logEs.onmessage=e=>{
+    if(!e.data||e.data===':ka')return;
+    const m=e.data.match(/^\\[[\\d:]+\\]\\|([a-z]*)\\|(.*)$/);
+    if(!m)return;
+    const[,cls,line]=m;
+    if(logFilter!=='all'&&cls!==logFilter)return;
+    const lb=g('log-body');
+    const d=document.createElement('div');d.className='ll '+(cls||'o');d.textContent=line;
+    lb.appendChild(d);
+    if(lb.children.length>3000)lb.removeChild(lb.firstChild);
+    if(autoScroll)lb.scrollTop=lb.scrollHeight;
+  };
+}
+function toggleAs(){autoScroll=!autoScroll;g('as-btn').classList.toggle('on',autoScroll);}
+function clearLogs(){g('log-body').innerHTML='';}
+
+// ── Activity ──────────────────────────────────────────────
+async function loadAc(){
+  const url=cur?`/activity?pid=${cur.id}`:'/activity';
+  try{
+    const acts=await api('GET',url);
+    const ic={create:'🤖',delete:'🗑️',start:'▶️',stop:'⏹',restart:'🔄',env:'⚙️',restore:'💾',rename:'✏️',power:'⚡'};
+    g('ac-list').innerHTML=acts.length?acts.map(a=>`
+      <div class="act-item">
+        <div class="act-icon" style="background:var(--sf2)">${ic[a.type]||'📝'}</div>
+        <div><div class="act-msg">${esc(a.msg)}</div><div class="act-ts">${new Date(a.ts).toLocaleString()}</div></div>
+      </div>`).join(''):`<div style="color:var(--mu);font-size:.82rem">Нет событий</div>`;
+  }catch{}
+}
+
+// ── Diagnose ──────────────────────────────────────────────
+async function runDiag(){
+  if(!cur)return;
+  g('dg-res').innerHTML='<div style="color:var(--mu);font-size:.82rem">Проверяем...</div>';
+  try{
+    const{results}=await api('POST',`/projects/${cur.id}/diagnose`);
+    g('dg-res').innerHTML=results.map(r=>`
+      <div class="diag-row">
+        <div class="diag-icon">${r.ok?'✅':'❌'}</div>
+        <div><div class="diag-check">${esc(r.check)}</div><div class="diag-msg">${esc(r.msg||'')}</div></div>
+      </div>`).join('');
+  }catch(e){g('dg-res').innerHTML=`<div style="color:var(--er)">${e.message}</div>`;}
+}
+
+// ── Create/Restore ────────────────────────────────────────
+function openCreate(mode){
+  g('mc-name').value='';g('mc-tok').value='';g('mc-rname').value='';
+  restoreFile=null;g('mc-zip-ok').style.display='none';
+  g('mc-drop-lbl').textContent=i('mc_drop');
+  setMode(mode||'new');openM('modal-create');
+}
+function setMode(m){
+  const isNew=m==='new', isGh=m==='github';
+  g('mc-new').style.display=isNew?'block':'none';
+  g('mc-rst').style.display=m==='restore'?'block':'none';
+  g('mc-gh').style.display=isGh?'block':'none';
+  g('mt-new').classList.toggle('act',isNew);
+  g('mt-rst').classList.toggle('act',m==='restore');
+  g('mt-gh').classList.toggle('act',isGh);
+  g('mc-t').textContent=isNew?i('mc_t_new'):isGh?'Импорт из GitHub':i('mc_t_rst');
+  g('mc-ok').textContent=isNew?i('mc_ok_new'):isGh?'Импортировать':i('mc_ok_rst');
+  setTimeout(()=>{
+    if(isNew)g('mc-name').focus();
+    else if(isGh)g('gh-url').focus();
+    else g('mc-rname').focus();
+  },50);
+}
+function onPlatChange(){
+  const h={telegram:'Получить у @BotFather',discord:'OAuth2 → Bot → Token',whatsapp:'Meta Developers API',viber:'Viber Admin Panel'};
+  g('mc-tok-h').textContent=h[g('mc-plat').value]||h.telegram;
+}
+function onDrop(e){e.preventDefault();const f=e.dataTransfer.files[0];if(f)onZip(f);g('mc-drop').classList.remove('drag');}
+function onZip(f){restoreFile=f;g('mc-drop-lbl').textContent='📦 '+f.name;g('mc-zip-ok').style.display='block';g('mc-zip-ok').textContent='Файл: '+f.name;}
+
+async function submitCreate(){
+  const isNew=g('mt-new').classList.contains('act');
+  const isGh=g('mt-gh').classList.contains('act');
+  let name,body;
+  if(isNew){
+    name=g('mc-name').value.trim();if(!name)return toast('Введи название','err');
+    body={name,token:g('mc-tok').value.trim(),template:g('mc-tpl').value,lang:g('mc-lang').value,platform:g('mc-plat').value};
+  }else if(isGh){
+    const ghUrl=g('gh-url').value.trim();
+    if(!ghUrl.startsWith('https://github.com/'))return toast('Введи корректный GitHub URL','err');
+    name=g('gh-name').value.trim()||ghUrl.split('/').pop().replace(/\\.git$/,'');
+    if(!name)return toast('Введи название проекта','err');
+    body={name,template:'basic',lang:'python',platform:'telegram'};
+  }else{
+    if(!restoreFile)return toast('Выбери .zip файл','err');
+    name=g('mc-rname').value.trim()||restoreFile.name.replace(/\\.zip$/i,'').replace(/^bot_/,'').replace(/_[\\d_]+$/,'');
+    if(!name)return toast('Введи название','err');
+    body={name,restore_only:true,template:'basic',lang:'python',platform:'telegram'};
+  }
+  g('mc-ok').disabled=true;
+  try{
+    const cr=await api('POST','/projects',body);
+    if(isGh){
+      const branch=g('gh-branch').value.trim()||'main';
+      const ghUrl=g('gh-url').value.trim();
+      await api('POST',`/projects/${cr.id}/github-import`,{url:ghUrl,branch});
+      toast('Импортировано из GitHub','ok');
+    }else if(!isNew&&restoreFile){
+      const fd=new FormData();fd.append('file',restoreFile);
+      const r=await fetch(`/api/projects/${cr.id}/restore`,{method:'POST',headers:{Authorization:'Bearer '+token},body:fd});
+      const d=await r.json();
+      if(!r.ok)throw new Error(d.error||'Restore failed');
+      toast('Восстановлено: '+d.files+' файлов','ok');
+    }
+    closeM('modal-create');await loadProjects();
+    const p=projects.find(x=>x.id===cr.id);if(p)selBot(p.id);
+  }catch(e){toast(e.message,'err');}
+  g('mc-ok').disabled=false;
+}
+
+// ── Rename ────────────────────────────────────────────────
+function openRename(){if(!cur)return;g('ren-inp').value=cur.name;openM('modal-rename');setTimeout(()=>g('ren-inp').focus(),50);}
+async function submitRename(){
+  const name=g('ren-inp').value.trim();if(!name||!cur)return;
+  try{await api('POST',`/projects/${cur.id}/rename`,{name});cur.name=name;g('ap-name').textContent=name;renderSidebar();closeM('modal-rename');toast('OK','ok');}
+  catch(e){toast(e.message,'err');}
+}
+
+// ── Settings ──────────────────────────────────────────────
+function openSettings(){openM('modal-settings');loadTok();}
+async function loadTok(){try{const d=await api('GET','/panel/token');if(d.token){token=d.token;const inp=g('set-tok-v');if(inp)inp.value=d.token;}}catch{}}
+async function changePw(){const pw=g('set-pw').value.trim();if(!pw)return toast('Введи пароль','err');try{await api('POST','/panel/password',{password:pw});toast('OK','ok');g('set-pw').value='';}catch(e){toast(e.message,'err');}}
+async function regenTok(){try{const d=await api('POST','/panel/token');token=d.token;g('set-tok-v').value=d.token;localStorage.setItem('bm_token',d.token);toast('OK','ok');}catch(e){toast(e.message,'err');}}
+function copyLink(){const tok=g('set-tok-v').value;navigator.clipboard.writeText(location.origin+'/?token='+tok).then(()=>toast('Ссылка скопирована','ok'));}
+
+// ── Server status ─────────────────────────────────────────
+async function openSrvStatus(){
+  togglePwr();
+  openSettings();
+  try{
+    const d=await api('GET','/server/status');
+    g('srv-card').style.display='block';
+    g('srv-body').innerHTML=`🖥 <b>${d.hostname}</b> — Node ${d.node}<br>⏱ Uptime: ${fmtUp(d.uptime_sec)}<br>📊 Load: ${d.load_1.toFixed(2)} / ${d.load_5.toFixed(2)}<br>🧠 RAM: ${d.ram_used}GB / ${d.ram_total}GB (${d.ram_pct}%)<br>💾 Disk: ${d.disk_used}GB / ${d.disk_total}GB (${d.disk_pct}%)<br>🤖 Боты: ${d.bots_running}/${d.bots_total}<br>🟢 Панель: ${d.panel_active?'active':'—'} · Nginx: ${d.nginx_active?'active':'—'}`;
+  }catch(e){toast(e.message,'err');}
+}
+
+// ── Welcome stats ─────────────────────────────────────────
+async function updateWelStats(){
+  try{
+    const d=await api('GET','/server/status');
+    const cv=g('w-cpu');if(cv){cv.textContent=d.load_1.toFixed(1);cv.style.color=d.load_1>2?'var(--er)':d.load_1>1?'var(--wa)':'var(--ok)';}
+    const rv=g('w-ram');if(rv){rv.textContent=Math.round(d.ram_pct)+'%';rv.style.color=d.ram_pct>85?'var(--er)':d.ram_pct>70?'var(--wa)':'var(--tx)';}
+    const dv=g('w-disk');if(dv)dv.textContent=Math.round(d.disk_pct)+'%';
+    const bv=g('w-bots');if(bv)bv.textContent=d.bots_running+'/'+d.bots_total;
+  }catch{}
+}
+
+// ── Power ─────────────────────────────────────────────────
+function togglePwr(){
+  const m=g('pwr-menu');m.classList.toggle('op');
+  if(m.classList.contains('op'))setTimeout(()=>document.addEventListener('click',function h(e){
+    if(!g('pwr-menu').contains(e.target)&&e.target!==g('pwr-btn')){m.classList.remove('op');document.removeEventListener('click',h);}
+  }),10);
+}
+
+async function pwrAction(target,mode){
+  g('pwr-menu').classList.remove('op');
+  if(mode==='hard'&&target==='vds'){if(!confirm(i('confirm_hard')))return;}
+  else if(target==='vds'){if(!confirm(i('confirm_vds')))return;}
+  const isPanel=target==='panel';
+  showOp(isPanel?i('op_panel'):i('op_vds'),isPanel?i('op_panel_s'):i('op_vds_s'),isPanel?7:0);
+  try{
+    await api('POST',isPanel?'/server/restart_panel':'/server/reboot',{mode});
+    if(isPanel)startCd(7,()=>location.reload());
+  }catch(e){toast(e.message,'err');g('op-modal').classList.remove('op');}
+}
+
+let cdT=null;
+function showOp(title,sub,sec){
+  g('op-t').textContent=title;g('op-s').textContent=sub;
+  const cd=g('op-cd');if(sec>0){cd.style.display='block';cd.textContent=sec+'s';}else cd.style.display='none';
+  g('op-modal').classList.add('op');
+}
+function startCd(sec,cb){
+  const cd=g('op-cd');cd.textContent=sec+'s';
+  const tick=()=>{sec--;cd.textContent=sec+'s';if(sec<=0){clearTimeout(cdT);cb();}else cdT=setTimeout(tick,1000);};
+  cdT=setTimeout(tick,1000);
+}
+
+// ── More menu ─────────────────────────────────────────────
+function toggleMore(){const m=g('more-menu');const op=m.classList.contains('op');m.classList.toggle('op');if(!op)setTimeout(()=>document.addEventListener('click',function h(e){if(!g('more-menu').contains(e.target)&&e.target!==g('more-btn')){g('more-menu').classList.remove('op');document.removeEventListener('click',h);}},10));}
+function closeMore(){g('more-menu').classList.remove('op');}
+
+// ── Polling ───────────────────────────────────────────────
+function startPolling(){clearInterval(pollT);pollT=setInterval(async()=>{await loadProjects();if(cur)loadMetrics();if(g('welcome').style.display!=='none')updateWelStats();},5000);}
+function startConn(){setInterval(async()=>{try{await api('GET','/ping');g('conn').className='conn';}catch{g('conn').className='conn off';}},15000);}
+
+// ── Modals ────────────────────────────────────────────────
+function openM(id){g(id).classList.add('op');}
+function closeM(id){g(id).classList.remove('op');}
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('op');}));
+
+// ── Toast ─────────────────────────────────────────────────
+function toast(msg,type='info'){
+  const w=g('toasts'),d=document.createElement('div');d.className='toast '+(type||'info');d.textContent=msg;
+  w.appendChild(d);setTimeout(()=>d.remove(),4000);
+}
+
+// ── Help ──────────────────────────────────────────────────
+function renderHelp(){
+  const arts=(HELP[lang]||HELP.en);
+  g('help-list').innerHTML=arts.map(a=>`
+    <button class="help-link" onclick="showArt('${a.id}')">
+      <span style="font-size:1.2rem;width:26px;text-align:center">${a.icon}</span>
+      <span>${a.t}</span>
+      <svg style="margin-left:auto;opacity:.4" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>`).join('');
+}
+function renderWelHelp(){
+  const arts=(HELP[lang]||HELP.en).slice(0,4);
+  g('wel-help-links').innerHTML=arts.map(a=>`
+    <button class="wel-help-a" onclick="openHelp('${a.id}')">
+      <span class="wel-help-item-icon">${a.icon}</span>${a.t}
+      <svg style="margin-left:auto;opacity:.3" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>`).join('');
+}
+function openHelp(artId){openM('modal-help');if(artId)showArt(artId);else backToHelp();}
+function backToHelp(){g('help-list').style.display='block';g('help-art').style.display='none';}
+function showArt(id){
+  const a=(HELP[lang]||HELP.en).find(x=>x.id===id);if(!a)return;
+  g('help-art-body').innerHTML=a.b;
+  g('help-art').style.display='block';g('help-list').style.display='none';
+}
+
+// ── Keyboard shortcuts ────────────────────────────────────
+document.addEventListener('keydown',e=>{
+  if(e.key==='/'&&e.target.tagName!=='INPUT'&&e.target.tagName!=='TEXTAREA'){e.preventDefault();g('sb-q').focus();}
+  if(e.key==='Escape'){document.querySelectorAll('.overlay.op').forEach(o=>o.classList.remove('op'));}
+});
+
+// ── Mobile ────────────────────────────────────────────────
+if(window.innerWidth<=768)g('mob-btn').style.display='flex';
+function toggleMob(){g('sidebar').classList.toggle('mob');}
+g('main').addEventListener('click',()=>{if(window.innerWidth<=768)g('sidebar').classList.remove('mob');});
+
+// ── Onboarding tour ───────────────────────────────────────
+const TOUR_STEPS=[
+  {el:'#sidebar',text:'Боковая панель — список ваших проектов',pos:'right'},
+  {el:'#sb-new-btn',text:'Создать новый бот',pos:'right'},
+  {el:'#pwr-btn',text:'Управление питанием сервера',pos:'left'},
+];
+let _tourIdx=0,_tourTip=null,_tourOv=null;
+function startTour(){
+  if(typeof window==='undefined')return;
+  _tourIdx=0;_showTourStep();
+}
+function _showTourStep(){
+  _clearTour();
+  if(_tourIdx>=TOUR_STEPS.length){localStorage.setItem('tour_done','1');return;}
+  const step=TOUR_STEPS[_tourIdx];
+  const el=document.querySelector(step.el);
+  if(!el){_tourIdx++;_showTourStep();return;}
+  el.classList.add('tour-highlight');
+  _tourOv=document.createElement('div');_tourOv.className='tour-overlay';
+  _tourOv.onclick=_nextTourStep;document.body.appendChild(_tourOv);
+  _tourTip=document.createElement('div');_tourTip.className='tour-tip';
+  const r=el.getBoundingClientRect();
+  _tourTip.innerHTML=`<div style="margin-bottom:8px">${step.text}</div><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:.7rem;color:#94a3b8">${_tourIdx+1}/${TOUR_STEPS.length}</span><button onclick="_nextTourStep()" style="background:var(--pr);border:none;color:#fff;border-radius:5px;padding:4px 10px;font-size:.72rem;cursor:pointer">Далее →</button></div>`;
+  if(step.pos==='right'){_tourTip.style.left=(r.right+12)+'px';_tourTip.style.top=(r.top)+'px';}
+  else{_tourTip.style.right=(window.innerWidth-r.left+12)+'px';_tourTip.style.top=(r.top)+'px';}
+  _tourTip.style.pointerEvents='all';
+  document.body.appendChild(_tourTip);
+}
+function _nextTourStep(){_tourIdx++;_showTourStep();}
+function _clearTour(){
+  if(_tourTip){_tourTip.remove();_tourTip=null;}
+  if(_tourOv){_tourOv.remove();_tourOv=null;}
+  document.querySelectorAll('.tour-highlight').forEach(e=>e.classList.remove('tour-highlight'));
+}
+// Start tour on first visit
+if(localStorage.getItem('tour_done')!=='1'){
+  setTimeout(startTour,1200);
+}
+</script>
+</body>
+</html>
