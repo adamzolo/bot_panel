@@ -453,18 +453,17 @@ clone_or_update_repo() {
 
   if [[ -d "$PD/.git" ]]; then
     info "Updating from GitHub..."
-    # Update remote URL with token if provided
-    if [[ -n "$GH_TOKEN" ]]; then
-      git -C "$PD" remote set-url origin "$REPO_URL" 2>/dev/null||true
-    fi
     git -C "$PD" pull origin main || warn "Git pull failed, using existing files"
-    # Remove token from stored remote URL for security
-    git -C "$PD" remote set-url origin "$BASE_URL" 2>/dev/null||true
+  elif [[ -d "$PD" ]]; then
+    info "Directory exists but not a git repo — initialising..."
+    git -C "$PD" init
+    git -C "$PD" remote add origin "$REPO_URL"
+    git -C "$PD" fetch --depth=1 origin main
+    git -C "$PD" checkout -f FETCH_HEAD
+    git -C "$PD" branch -M main
   else
     info "Cloning from GitHub..."
-    git clone --depth=1 "$REPO_URL" "$PD" || die "Failed to clone repo. For private repo use: --token YOUR_GITHUB_TOKEN"
-    # Remove token from stored remote URL for security
-    git -C "$PD" remote set-url origin "$BASE_URL" 2>/dev/null||true
+    git clone --depth=1 "$REPO_URL" "$PD" || die "Failed to clone repo"
   fi
   # Save token for future update.sh runs
   if [[ -n "$GH_TOKEN" ]]; then
