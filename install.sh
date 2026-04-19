@@ -457,12 +457,11 @@ clone_or_update_repo() {
   else
     info "Downloading app files from GitHub..."
     local TMP; TMP=$(mktemp -d)
-    git clone --depth=1 "$REPO_URL" "$TMP" || die "Failed to clone repo"
-    cp -r "$TMP/app" "$PD/"
-    cp -r "$TMP/static" "$PD/"
-    cp "$TMP/update.sh" "$PD/"
-    cp -r "$TMP/.git" "$PD/"
+    git clone --depth=1 "$REPO_URL" "$TMP" 2>&1 | grep -v "^hint:" || die "Failed to clone repo"
+    mkdir -p "$PD"
+    cp -r "$TMP/." "$PD/"
     rm -rf "$TMP"
+    ok "App files ready"
   fi
   # Save token for future update.sh runs
   if [[ -n "$GH_TOKEN" ]]; then
@@ -579,8 +578,8 @@ echo -e "${N}"
 TOK=$(python3 -c "import secrets;print(secrets.token_urlsafe(32))")
 SK=$(python3 -c "import secrets;print(secrets.token_hex(32))")
 
-detect_os; install_pkgs; ask_password; mk_dirs; install_ruby_gems; hash_pw
-clone_or_update_repo; deploy_app; create_user
+detect_os; install_pkgs; ask_password; install_ruby_gems; hash_pw
+clone_or_update_repo; mk_dirs; deploy_app; create_user
 
 [[ $NOSSL -eq 0 ]]&&{ SERVER_IP=$(get_ip 2>/dev/null||echo "127.0.0.1"); gen_cert "$SERVER_IP"; }
 
