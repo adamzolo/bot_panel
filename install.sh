@@ -14,12 +14,13 @@ die()  { echo -e "${R}[XX]${N}  $1"; exit 1; }
 PD=/opt/botpanel; BD=/opt/botpanel/bots; VE=/opt/botpanel/venv
 SS=/opt/botpanel/ssl; BK=/opt/botpanel_backups; IC=/opt/botpanel/.last_ip
 RU=botpanel; PO=8080; UPD=0; NOSSL=0
-TOK=""; SK=""; HP=""; PP=""
+TOK=""; SK=""; HP=""; PP=""; GH_TOKEN=""
 
 parse_args() {
   while [[ $# -gt 0 ]]; do
     case $1 in --update) UPD=1;shift;; --no-ssl) NOSSL=1;shift;;
-      --help) echo "sudo bash install.sh [--update] [--no-ssl]";exit 0;;
+      --token) GH_TOKEN="${2:-}";shift 2;;
+      --help) echo "sudo bash install.sh [--update] [--no-ssl] [--token GITHUB_TOKEN]";exit 0;;
       *) die "Unknown: $1";; esac; done; }
 
 detect_os() {
@@ -439,13 +440,31 @@ write_node_server() {
 # Clone or update repo from GitHub
 # ========================
 clone_or_update_repo() {
-  local REPO_URL="https://github.com/adamzolo/bot_panel.git"
+  # Build authenticated URL if token provided
+  local BASE_URL="https://github.com/adamzolo/bot_panel.git"
+  local REPO_URL="$BASE_URL"
+  [[ -n "$GH_TOKEN" ]] && REPO_URL="https://${GH_TOKEN}@github.com/adamzolo/bot_panel.git"
+
   if [[ -d "$PD/.git" ]]; then
     info "Updating from GitHub..."
+    # Update remote URL with token if provided
+    if [[ -n "$GH_TOKEN" ]]; then
+      git -C "$PD" remote set-url origin "$REPO_URL" 2>/dev/null||true
+    fi
     git -C "$PD" pull origin main || warn "Git pull failed, using existing files"
+    # Remove token from stored remote URL for security
+    git -C "$PD" remote set-url origin "$BASE_URL" 2>/dev/null||true
   else
     info "Cloning from GitHub..."
-    git clone --depth=1 "$REPO_URL" "$PD" || die "Failed to clone repo"
+    git clone --depth=1 "$REPO_URL" "$PD" || die "Failed to clone repo. For private repo use: --token YOUR_GITHUB_TOKEN"
+    # Remove token from stored remote URL for security
+    git -C "$PD" remote set-url origin "$BASE_URL" 2>/dev/null||true
+  fi
+  # Save token for future update.sh runs
+  if [[ -n "$GH_TOKEN" ]]; then
+    echo "$GH_TOKEN" > "$PD/.gh_token"
+    chmod 600 "$PD/.gh_token"
+    ok "GitHub token saved for auto-updates"
   fi
 }
 
