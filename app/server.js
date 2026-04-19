@@ -134,7 +134,7 @@ function needAuth(req, res, next) {
 
 function send(res, status, data, ct='application/json') {
   const body = typeof data === 'string' ? data : je(data);
-  res.writeHead(status, {'Content-Type':ct,'Access-Control-Allow-Origin':'*'});
+  res.writeHead(status, {'Content-Type':ct,'Access-Control-Allow-Origin':'*','X-Content-Type-Options':'nosniff'});
   res.end(body);
 }
 function sendFile(res, fp, ct='application/octet-stream') {
@@ -184,8 +184,8 @@ function parseMultipart(req) {
 // Parse JSON body
 function parseBody(req) {
   return new Promise((resolve, reject) => {
-    let raw = '';
-    req.on('data', c => raw += c);
+    let raw = '', size = 0;
+    req.on('data', c => { size += c.length; if(size > 5*1024*1024) { req.destroy(); return reject(new Error('Too large')); } raw += c; });
     req.on('end', () => {
       try { resolve(raw ? JSON.parse(raw) : {}); }
       catch { resolve({}); }
@@ -288,6 +288,7 @@ route('POST','/api/login', async (req,res) => {
     return send(res,401,{error:'Invalid password'});
   }
   loginLock[ip]={n:0,until:0};
+  activity('login','system',`Login from ${ip}`);
   const token = signJwt({sub:'admin', exp:Math.floor(now/1000)+86400});
   send(res,200,{token, expires_in:86400});
 });
@@ -408,6 +409,17 @@ route('PUT','/api/projects/:pid/token', needAuth, async (req,res) => {
   send(res,200,{ok:true});
 });
 
+// ── Project status ────────────────────────────────────────
+route('GET','/api/projects/:pid/status', needAuth, (req,res) => {
+  const {pid} = req.params;
+  if(!validPid(pid)) return send(res,400,{error:'Invalid'});
+  const proc = procs[pid];
+  const running = !!proc && proc.exitCode===null;
+  const up = running && tstart[pid] ? Math.floor((Date.now()-tstart[pid])/1000) : 0;
+  const m = readMeta(pid);
+  send(res,200,{id:pid, name:m.name||pid, running, uptime:up, lang:m.lang||'python', platform:m.platform||'telegram'});
+});
+
 // ── ENV ───────────────────────────────────────────────────
 route('GET','/api/projects/:pid/env', needAuth, (req,res) => {
   const {pid} = req.params;
@@ -511,7 +523,7 @@ route('POST','/api/projects/:pid/upload', needAuth, async (req,res) => {
     const {files} = await parseMultipart(req);
     const f = files.file;
     if (!f) return send(res,400,{error:'No file'});
-    const fn  = path.basename(f.filename||'upload');
+    const fn  = path.basename(f.filename||'upload').replace(/[^a-zA-Z0-9._-]/g,'_');
     const dest = path.join(botDir(pid),fn);
     fs.writeFileSync(dest,f.buffer);
     send(res,201,{ok:true,name:fn,size:fs.statSync(dest).size});

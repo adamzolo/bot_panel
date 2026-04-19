@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Bot Manager</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='2' y='9' width='20' height='12' rx='3' fill='%236762a6'/><circle cx='8' cy='15' r='2.5' fill='white'/><circle cx='16' cy='15' r='2.5' fill='white'/><line x1='8' y1='3' x2='8' y2='9' stroke='%236762a6' stroke-width='2'/><line x1='16' y1='3' x2='16' y2='9' stroke='%236762a6' stroke-width='2'/></svg>">
 <style>
 :root{
   --bg:#f8fafc;--sf:#ffffff;--sf2:#f1f5f9;--sf3:#e2e8f0;
@@ -510,7 +511,6 @@ select.inp{cursor:pointer;}
           <div class="info-grid" style="margin-bottom:14px">
             <div class="info-cell"><div class="info-cell-l" id="ic-status-l">Статус</div><div class="info-cell-v" id="ic-status">—</div></div>
             <div class="info-cell"><div class="info-cell-l" id="ic-up-l">Аптайм</div><div class="info-cell-v" id="ic-up">—</div></div>
-            <div class="info-cell"><div class="info-cell-l">TOKEN</div><div class="info-cell-v" id="ic-tok" style="font-family:var(--m);font-size:.75rem;cursor:pointer" onclick="copyTok()" data-tip="Копировать">—</div></div>
             <div class="info-cell"><div class="info-cell-l" id="ic-main-l">Файл</div><div class="info-cell-v" id="ic-main" style="font-family:var(--m)">—</div></div>
             <div class="info-cell"><div class="info-cell-l" id="ic-cre-l">Создан</div><div class="info-cell-v" id="ic-cre">—</div></div>
             <div class="info-cell"><div class="info-cell-l" id="ic-lang-l">Язык</div><div class="info-cell-v" id="ic-lang" style="font-family:var(--m)">—</div></div>
@@ -581,6 +581,7 @@ select.inp{cursor:pointer;}
         <div class="pane" id="pane-ev">
           <div class="cfgvar-header">
             <h2 id="ev-t">Config Variables</h2>
+            <button class="btn btn-ghost" onclick="copyEnv()"><span>Копировать</span></button>
             <button class="btn btn-ok" onclick="saveEnv()" id="bt-env"><span id="bt-env-l">Сохранить</span></button>
           </div>
           <div class="cfgvar-note" id="ev-note">
@@ -837,7 +838,7 @@ select.inp{cursor:pointer;}
     <div id="lg-form" style="display:none">
       <div class="fg" style="margin-bottom:12px">
         <label style="font-size:.72rem;color:var(--mu);margin-bottom:4px;display:block" id="lg-pw-l">Пароль</label>
-        <input class="inp" type="password" id="lg-pw" placeholder="Введите пароль...">
+        <input class="inp" type="password" id="lg-pw" placeholder="Введите пароль..." onkeydown="if(event.key==='Enter')doLogin()">
       </div>
       <button class="btn btn-pr" style="width:100%;justify-content:center;padding:10px;font-size:.88rem" onclick="doLogin()" id="lg-btn">
         <span id="lg-btn-l">Войти</span>
@@ -1028,8 +1029,8 @@ end</pre>`},
 <p>3. Придумай имя (видят пользователи) и username (должен заканчиваться на <b>bot</b>).</p>
 <p>4. BotFather пришлёт токен:</p>
 <pre>1234567890:ABCdefGHIjklMNOpqrsTUV</pre>
-<p>Скопируй токен и вставь в поле <b>Токен бота</b> при создании.</p>
-<p><b>Важно:</b> токен хранится в env бота (<code>BOT_TOKEN</code>) и в коде шаблона. Никому не передавай — это полный доступ к боту.</p>`},
+<p>Скопируй токен → вставь в <b>Config Vars</b> как <code>BOT_TOKEN</code>.</p>
+<p><b>Важно:</b> никому не передавай токен — это полный доступ к боту.</p>`},
   {id:'start',icon:'▶️',t:'Запуск, остановка, рестарт',b:`<h3>Управление ботом</h3>
 <p><b>Старт</b> — запустить бота. Бот запускается через несколько секунд, статус меняется на «Запущен».</p>
 <p><b>Стоп</b> — корректно остановить бота.</p>
@@ -1130,7 +1131,7 @@ end</pre>`},
 <p>1. Знайди <b>@BotFather</b> у Telegram.</p>
 <p>2. Відправ <code>/newbot</code></p>
 <p>3. Вигадай ім'я та username (має закінчуватись на <b>bot</b>).</p>
-<p>4. BotFather надішле токен — скопіюй і встав у поле Токен.</p>
+<p>4. BotFather надішле токен — скопіюй токен → встав у <b>Config Vars</b> як <code>BOT_TOKEN</code>.</p>
 <p><b>Важливо:</b> нікому не передавай токен — це повний доступ до бота.</p>`},
   {id:'start',icon:'▶️',t:'Запуск, зупинка, рестарт',b:`<h3>Керування ботом</h3>
 <p><b>Старт</b> — запустити бота. <b>Стоп</b> — зупинити. <b>Рестарт</b> — перезапустити після змін коду.</p>
@@ -1213,7 +1214,7 @@ end</pre>`},
 <p>1. Find <b>@BotFather</b> in Telegram.</p>
 <p>2. Send <code>/newbot</code></p>
 <p>3. Choose a name (visible to users) and username (must end in <b>bot</b>).</p>
-<p>4. BotFather sends a token — copy and paste it into the Token field.</p>
+<p>4. BotFather sends a token — copy the token → paste into <b>Config Vars</b> as <code>BOT_TOKEN</code>.</p>
 <p><b>Important:</b> never share your token — it grants full bot access.</p>`},
   {id:'start',icon:'▶️',t:'Start, stop, restart',b:`<h3>Bot control</h3>
 <p><b>Start</b> — launch the bot. <b>Stop</b> — stop it. <b>Restart</b> — restart after code changes.</p>
@@ -1369,11 +1370,19 @@ async function loadProjects(){
 }
 function filterBots(q){renderSidebar(q);}
 function renderSidebar(q=''){
-  const fl=projects.filter(p=>!q||p.name.toLowerCase().includes(q.toLowerCase())||p.id.includes(q));
+  if(projects.length===0){
+    g('sb-apps').innerHTML=`<div style="padding:20px 16px;text-align:center;color:var(--mu)">
+      <div style="font-size:2rem;margin-bottom:8px">🤖</div>
+      <div style="font-size:.8rem;margin-bottom:12px">${lang==='ru'?'Ботов пока нет':lang==='ua'?'Ботів ще немає':'No bots yet'}</div>
+    </div>`;
+    return;
+  }
+  const fl=projects.filter(p=>!q||p.name.toLowerCase().includes(q.toLowerCase())||p.id.includes(q.toLowerCase())||(p.lang||'').toLowerCase().includes(q.toLowerCase())||(p.platform||'').toLowerCase().includes(q.toLowerCase()));
+  const langIcon={python:'🐍',node:'⬡',php:'🐘',ruby:'💎'};
   g('sb-apps').innerHTML=fl.map(p=>`
     <div class="sb-app${cur&&cur.id===p.id?' act':''}" onclick="selBot('${p.id}')">
       <div class="sb-app-dot ${p.running?'on':'off'}"></div>
-      <div class="sb-app-name">${esc(p.name)}</div>
+      <div class="sb-app-name">${langIcon[p.lang]||'🤖'} ${esc(p.name)}</div>
       <div class="sb-app-meta">
         <span class="sb-app-lang">${p.lang}</span>
         ${p.running?`<span class="sb-app-up">${fmtUp(p.uptime)}</span>`:''}
@@ -1407,7 +1416,6 @@ function renderOv(){
   g('ic-status').textContent=p.running?i('running'):i('stopped');
   g('ic-status').style.color=p.running?'var(--ok)':'var(--mu)';
   g('ic-up').textContent=fmtUp(p.uptime);
-  g('ic-tok').textContent=p.token?(p.token.slice(0,18)+'…'):'—';
   g('ic-main').textContent=p.main||'—';
   g('ic-cre').textContent=(p.created||'').slice(0,10)||'—';
   g('ic-lang').textContent=p.lang||'python';
@@ -1454,7 +1462,26 @@ async function botStop(){if(!cur)return;try{await api('POST',`/projects/${cur.id
 async function botRestart(){if(!cur)return;g('bt-restart').disabled=true;try{await api('POST',`/projects/${cur.id}/restart`);toast('Restarted','ok');await loadProjects();}catch(e){toast(e.message,'err');}}
 async function toggleAuto(){if(!cur)return;const sw=g('auto-sw');const v=!sw.classList.contains('on');try{await api('POST',`/projects/${cur.id}/autostart`,{enabled:v});sw.classList.toggle('on',v);cur.autostart=v;}catch(e){toast(e.message,'err');}}
 async function saveLimits(){if(!cur)return;try{await api('POST',`/projects/${cur.id}/limits`,{ram_limit:parseInt(g('lim-ram').value),cpu_limit:parseInt(g('lim-cpu').value)});toast('Saved','ok');}catch(e){toast(e.message,'err');}}
-async function confirmDel(){if(!cur||!confirm(i('confirm_del')+' "'+cur.name+'"?'))return;try{await api('DELETE',`/projects/${cur.id}`);toast('Deleted','ok');goHome();await loadProjects();}catch(e){toast(e.message,'err');}}
+function confirmDel(){
+  if(!cur)return;
+  const existing=g('modal-confirm-del');
+  if(existing)existing.remove();
+  const mo=document.createElement('div');
+  mo.id='modal-confirm-del';
+  mo.className='overlay op';
+  mo.innerHTML=`<div class="modal" style="max-width:380px">
+    <div class="modal-hdr"><div class="modal-t">⚠️ ${lang==='ru'?'Удалить бота':lang==='ua'?'Видалити бота':'Delete bot'}</div><button class="mclose" onclick="document.getElementById('modal-confirm-del').remove()">✕</button></div>
+    <div class="modal-body"><p style="font-size:.88rem;color:var(--mu);margin-bottom:8px">${lang==='ru'?'Будут удалены все файлы и данные бота:':lang==='ua'?'Будуть видалені всі файли та дані бота:':'All files and data will be permanently deleted:'}</p><p style="font-size:.92rem;font-weight:700">${esc(cur.name)}</p></div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="document.getElementById('modal-confirm-del').remove()">${lang==='ru'?'Отмена':lang==='ua'?'Скасувати':'Cancel'}</button><button class="btn btn-danger" onclick="_doDel()">${lang==='ru'?'Удалить':lang==='ua'?'Видалити':'Delete'}</button></div>
+  </div>`;
+  mo.addEventListener('click',e=>{if(e.target===mo)mo.remove();});
+  document.body.appendChild(mo);
+}
+async function _doDel(){
+  const mo=g('modal-confirm-del');if(mo)mo.remove();
+  if(!cur)return;
+  try{await api('DELETE',`/projects/${cur.id}`);toast('Deleted','ok');goHome();await loadProjects();}catch(e){toast(e.message,'err');}
+}
 async function copyTok(){if(!cur)return;navigator.clipboard.writeText(cur.token||'').then(()=>toast('Copied','ok'));}
 
 // ── Editor ────────────────────────────────────────────────
@@ -1478,7 +1505,7 @@ async function openFile(fn){
 }
 async function saveFile(){
   if(!cur||!curFile)return;
-  try{await api('PUT',`/projects/${cur.id}/files/${encodeURIComponent(curFile)}`,{content:g('editor').value});toast(i('bt_save'),'ok');}
+  try{await api('PUT',`/projects/${cur.id}/files/${encodeURIComponent(curFile)}`,{content:g('editor').value});toast('Сохранено ✓','ok');}
   catch(e){toast(e.message,'err');}
 }
 async function newFile(){
@@ -1490,12 +1517,15 @@ g('editor').addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='s
 // ── Config Vars ───────────────────────────────────────────
 async function loadEnv(){if(!cur)return;try{const d=await api('GET',`/projects/${cur.id}/env`);g('env-ed').value=d.content||'';}catch(e){toast(e.message,'err');}}
 async function saveEnv(){if(!cur)return;try{await api('PUT',`/projects/${cur.id}/env`,{content:g('env-ed').value});toast(i('ev_save'),'ok');}catch(e){toast(e.message,'err');}}
+function copyEnv(){ navigator.clipboard.writeText(g('env-ed').value).then(()=>toast('Скопировано','ok')); }
 
 // ── Files ─────────────────────────────────────────────────
 async function loadFm(){
   if(!cur)return;
   try{
     const fl=await api('GET',`/projects/${cur.id}/files`);
+    const fmTitle=g('fm-t');
+    if(fmTitle)fmTitle.textContent=(T[lang]||T.en).fm_t+(fl.length?' ('+fl.length+')':'');
     g('fm-list').innerHTML=fl.length?fl.map(f=>`
       <div class="file-row">
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -1755,7 +1785,13 @@ function showArt(id){
 // ── Keyboard shortcuts ────────────────────────────────────
 document.addEventListener('keydown',e=>{
   if(e.key==='/'&&e.target.tagName!=='INPUT'&&e.target.tagName!=='TEXTAREA'){e.preventDefault();g('sb-q').focus();}
-  if(e.key==='Escape'){document.querySelectorAll('.overlay.op').forEach(o=>o.classList.remove('op'));}
+  if(e.key==='Escape'){
+    document.querySelectorAll('.overlay.op').forEach(o=>{
+      const id=o.id;if(id)closeM(id);else o.classList.remove('op');
+    });
+    // also close dynamically created confirm modals
+    const dynMo=g('modal-confirm-del');if(dynMo)dynMo.remove();
+  }
 });
 
 // ── Mobile ────────────────────────────────────────────────
