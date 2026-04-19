@@ -120,10 +120,16 @@ create_user() {
   local SF="/etc/sudoers.d/botpanel"
   cat > "$SF" << 'SUDEOF'
 botpanel ALL=(ALL) NOPASSWD: /usr/sbin/reboot
+botpanel ALL=(ALL) NOPASSWD: /usr/bin/systemctl reboot
 botpanel ALL=(ALL) NOPASSWD: /bin/systemctl reboot
+botpanel ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart botpanel
 botpanel ALL=(ALL) NOPASSWD: /bin/systemctl restart botpanel
+botpanel ALL=(ALL) NOPASSWD: /usr/bin/systemctl start botpanel
 botpanel ALL=(ALL) NOPASSWD: /bin/systemctl start botpanel
+botpanel ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop botpanel
 botpanel ALL=(ALL) NOPASSWD: /bin/systemctl stop botpanel
+botpanel ALL=(ALL) NOPASSWD: /bin/sh
+botpanel ALL=(ALL) NOPASSWD: /usr/bin/sh
 SUDEOF
   chmod 440 "$SF"
   ok "User '$RU' + sudoers for power management"; }
@@ -419,13 +425,9 @@ Restart=always
 RestartSec=5
 StandardOutput=journal
 StandardError=journal
-NoNewPrivileges=yes
 PrivateTmp=yes
-ProtectSystem=strict
-ReadWritePaths=${PD} ${BK}
+ReadWritePaths=${PD} ${BK} /etc/systemd/system /proc/sys/kernel
 ProtectHome=yes
-RestrictSUIDSGID=yes
-CapabilityBoundingSet=
 [Install]
 WantedBy=multi-user.target
 EOF
