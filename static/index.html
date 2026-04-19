@@ -1216,7 +1216,7 @@ function applyLang(){
   setText('set-chpw-l','set_chpw');setText('set-tok-t','set_tok_t');setText('set-tok-s','set_tok_s');
   setText('set-regen-l','set_regen');setText('set-srv-t','set_srv_t');
   setText('mc-name-l','mc_name');setText('mc-plat-l','mc_plat');setText('mc-lang-l','mc_lang');
-  setText('mc-tok-l','mc_tok');setText('mc-tok-h','mc_tok_h');setText('mc-tpl-l','mc_tpl');
+  setText('mc-tpl-l','mc_tpl');
   setText('mc-rname-l','mc_rname');setText('mc-drop-lbl','mc_drop');
   setText('mc-cancel','mc_cancel');setText('mt-new-l','mt_new');setText('mt-rst-l','mt_rst');
   setText('ren-t','ren_t');setText('ren-l','ren_l');setText('ren-note','ren_note');setText('ren-ok-l','ren_ok');
@@ -1495,7 +1495,7 @@ async function runDiag(){
 
 // ── Create/Restore ────────────────────────────────────────
 function openCreate(mode){
-  g('mc-name').value='';g('mc-tok').value='';g('mc-rname').value='';
+  g('mc-name').value='';g('mc-rname').value='';
   restoreFile=null;g('mc-zip-ok').style.display='none';
   g('mc-drop-lbl').textContent=i('mc_drop');
   setMode(mode||'new');openM('modal-create');
@@ -1518,7 +1518,6 @@ function setMode(m){
 }
 function onPlatChange(){
   const h={telegram:'Получить у @BotFather',discord:'OAuth2 → Bot → Token',whatsapp:'Meta Developers API',viber:'Viber Admin Panel'};
-  g('mc-tok-h').textContent=h[g('mc-plat').value]||h.telegram;
 }
 function onDrop(e){e.preventDefault();const f=e.dataTransfer.files[0];if(f)onZip(f);g('mc-drop').classList.remove('drag');}
 function onZip(f){restoreFile=f;g('mc-drop-lbl').textContent='📦 '+f.name;g('mc-zip-ok').style.display='block';g('mc-zip-ok').textContent='Файл: '+f.name;}
@@ -1529,7 +1528,7 @@ async function submitCreate(){
   let name,body;
   if(isNew){
     name=g('mc-name').value.trim();if(!name)return toast('Введи название','err');
-    body={name,token:g('mc-tok').value.trim(),template:g('mc-tpl').value,lang:g('mc-lang').value,platform:g('mc-plat').value};
+    body={name,template:g('mc-tpl').value,lang:g('mc-lang').value,platform:g('mc-plat').value};
   }else if(isGh){
     const ghUrl=g('gh-url').value.trim();
     if(!ghUrl.startsWith('https://github.com/'))return toast('Введи корректный GitHub URL','err');
