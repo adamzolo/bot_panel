@@ -572,7 +572,7 @@ select.inp{cursor:pointer;}
                   </button>
                 </div>
               </div>
-              <textarea class="editor-ta" id="editor" spellcheck="false" placeholder="Выберите файл..."></textarea>
+              <textarea class="editor-ta" id="editor" spellcheck="false" id="editor-placeholder" placeholder="Выберите файл..."></textarea>
             </div>
           </div>
         </div>
@@ -1283,6 +1283,7 @@ function applyLang(){
   setText('ac-t','ac_t');setText('dg-t','dg_t');setText('bt-dg-l','dg_check');
   setText('lf-all','lf_all');setText('lf-err','lf_err');setText('lf-warn','lf_warn');setText('lf-wd','lf_wd');
   setText('as-l','as_l');setText('cl-l','cl_l');
+  const ep=g('editor-placeholder'); if(ep) ep.placeholder=lang==='ua'?'Виберіть файл...':lang==='en'?'Select a file...':'Выберите файл...';
   setText('mm-logs','mm_logs');setText('mm-bkp','mm_bkp');setText('mm-ren','mm_ren');setText('mm-del','mm_del');
   setText('more-lbl','more');
   setText('pm-lbl','pm_lbl');setText('pm-ps','pm_ps');setText('pm-ps-s','pm_ps_s');
@@ -1537,7 +1538,7 @@ async function loadFm(){
         <button class="icon-btn red" onclick="delFile('${esc(f.name)}')" data-tip="Удалить">
           <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
         </button>
-      </div>`).join(''):`<div style="padding:20px;text-align:center;color:var(--mu);font-size:.82rem">Нет файлов</div>`;
+      </div>`).join(''):`<div style="padding:20px;text-align:center;color:var(--mu);font-size:.82rem">${lang==='ua'?'Файлів немає':lang==='en'?'No files':'Нет файлов'}</div>`;
   }catch(e){toast(e.message,'err');}
 }
 async function delFile(fn){if(!cur||!confirm('Удалить '+fn+'?'))return;try{await api('DELETE',`/projects/${cur.id}/files/${encodeURIComponent(fn)}`);loadFm();}catch(e){toast(e.message,'err');}}
@@ -1572,23 +1573,40 @@ function toggleAs(){autoScroll=!autoScroll;g('as-btn').classList.toggle('on',aut
 function clearLogs(){g('log-body').innerHTML='';}
 
 // ── Activity ──────────────────────────────────────────────
+const ACT_I18N = {
+  ru:{create:'Проект создан',delete:'Проект удалён',start:'Бот запущен',stop:'Бот остановлен',
+      restart:'Бот перезапущен',env:'Config Vars обновлены',restore:'Восстановлен из backup',
+      rename:'Переименован',power:'Управление сервером',github:'Импортирован с GitHub',
+      login:'Вход в систему','default':'Событие'},
+  ua:{create:'Проект створено',delete:'Проект видалено',start:'Бот запущено',stop:'Бот зупинено',
+      restart:'Бот перезапущено',env:'Config Vars оновлено',restore:'Відновлено з backup',
+      rename:'Перейменовано',power:'Керування сервером',github:'Імпортовано з GitHub',
+      login:'Вхід до системи','default':'Подія'},
+  en:{create:'Project created',delete:'Project deleted',start:'Bot started',stop:'Bot stopped',
+      restart:'Bot restarted',env:'Config Vars updated',restore:'Restored from backup',
+      rename:'Renamed',power:'Server action',github:'Imported from GitHub',
+      login:'Login','default':'Event'},
+};
+function actMsg(a){ const m=ACT_I18N[lang]||ACT_I18N.ru; return m[a.type]||m['default']; }
+function actEmpty(){ return lang==='ua'?'Немає подій':lang==='en'?'No events':'Нет событий'; }
+
 async function loadAc(){
   const url=cur?`/activity?pid=${cur.id}`:'/activity';
   try{
     const acts=await api('GET',url);
-    const ic={create:'🤖',delete:'🗑️',start:'▶️',stop:'⏹',restart:'🔄',env:'⚙️',restore:'💾',rename:'✏️',power:'⚡'};
+    const ic={create:'🤖',delete:'🗑️',start:'▶️',stop:'⏹',restart:'🔄',env:'⚙️',restore:'💾',rename:'✏️',power:'⚡',github:'⬇️',login:'🔑'};
     g('ac-list').innerHTML=acts.length?acts.map(a=>`
       <div class="act-item">
         <div class="act-icon" style="background:var(--sf2)">${ic[a.type]||'📝'}</div>
-        <div><div class="act-msg">${esc(a.msg)}</div><div class="act-ts">${new Date(a.ts).toLocaleString()}</div></div>
-      </div>`).join(''):`<div style="color:var(--mu);font-size:.82rem">Нет событий</div>`;
+        <div><div class="act-msg">${esc(actMsg(a))}${a.pid&&a.pid!=='system'?` <span style="color:var(--mu);font-size:.75rem">${esc(a.pid)}</span>`:''}</div><div class="act-ts">${new Date(a.ts).toLocaleString()}</div></div>
+      </div>`).join(''):`<div style="color:var(--mu);font-size:.82rem">${actEmpty()}</div>`;
   }catch{}
 }
 
 // ── Diagnose ──────────────────────────────────────────────
 async function runDiag(){
   if(!cur)return;
-  g('dg-res').innerHTML='<div style="color:var(--mu);font-size:.82rem">Проверяем...</div>';
+  g('dg-res').innerHTML=`<div style="color:var(--mu);font-size:.82rem">${lang==='ua'?'Перевіряємо...':lang==='en'?'Checking...':'Проверяем...'}</div>`;
   try{
     const{results}=await api('POST',`/projects/${cur.id}/diagnose`);
     g('dg-res').innerHTML=results.map(r=>`
