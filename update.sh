@@ -13,7 +13,8 @@ fi
 
 echo "[update] Pulling latest changes from GitHub..."
 git config --global --add safe.directory "$REPO_DIR" 2>/dev/null || true
-git -C "$REPO_DIR" pull origin main
+git -C "$REPO_DIR" fetch origin main
+git -C "$REPO_DIR" reset --hard origin/main
 
 # Restore clean URL (no token in stored remote)
 git -C "$REPO_DIR" remote set-url origin "https://github.com/adamzolo/bot_panel.git"
