@@ -12,6 +12,7 @@ if [[ -f "$TOKEN_FILE" ]]; then
 fi
 
 echo "[update] Pulling latest changes from GitHub..."
+git config --global --add safe.directory "$REPO_DIR" 2>/dev/null || true
 git -C "$REPO_DIR" pull origin main
 
 # Restore clean URL (no token in stored remote)
